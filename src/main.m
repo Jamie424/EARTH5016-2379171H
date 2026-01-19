@@ -9,7 +9,7 @@ xf = 0:dx:W;            % coordinate vectore for cell face positions [m]
 
 % set time step size
 dt_adv = (dx/2)/u0;
-dt_dff = (dx/2)^2/u0;
+dt_dff = (dx/2)^2/k0;
 dt     = CFL * min(dt_adv,dt_dff); % time step [s]
 
 % set up ghosted index lists for boundary conditions
@@ -129,10 +129,10 @@ function dfdt = diffusion(f,k,dx,ind)
 % dfdt: diffusion rate of scalar field f
 
 % calculate diffusive flux of scalar field f
-q = (complete here);
+q = - k * diff(f(ind)) / dx;
 
 % calculate diffusion flux balance for rate of change
-dfdt = (complete here);
+dfdt = - diff(q) / dx;
 
 end
 

@@ -17,10 +17,10 @@ u0    = 1e-6;          % advection speed [m/s]
 
 BC    = 'periodic';    % boundary condition option flag ('insulating', 'periodic')
 ADVN  = 'UPW3';        % advection scheme ('UPW1', 'CFD2', 'UPW3')
-TINT  = 'FE1';         % time integration scheme ('FE1', 'RK2')
+TINT  = 'RK2';         % time integration scheme ('FE1', 'RK2')
 
 yr    = 3600*24*365;   % seconds per year [s]
-tend  = W/max(u0,k0)/4;  % stopping time [s]
+tend  = W/max(u0,k0);  % stopping time [s]
 CFL   = 1/4;           % time step limiter
 nop   = 100;           % make output figure every 'nop' time steps
 

@@ -30,7 +30,7 @@ CFL   = CC(cc);        % time step limiter
 nop   = 1000;          % make output figure every 'nop' time steps
 
 %*****  RUN MODEL
-run('../src/main_solution.m');
+run('../src/main.m');
 
 E(cc)  = Err;
 DT(cc) = dt;

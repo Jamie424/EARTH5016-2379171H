@@ -24,7 +24,7 @@ switch BC
 end
 
 % set initial condition for temperature at cell centres
-T   = zeros(size(xc)) + Tr;   % initialise T array at Tr
+T   = T0 + dT*exp(-(xc-W/2).^2./(2*sgma0));      % initialise T array at Tr
 Tin = T;                                         % store initial condition for plotting
 Ta  = T;                                         % initialise analytical solution
 
@@ -66,8 +66,10 @@ while t <= tend
     T = T + dTdt * dt;
 
     % get analytical solution at time t
-    sgmt = (complete using eq. (4));
-    Ta   = (complete using eq. (3));
+    sgmt = sqrt(sgm0^2 +2*k0*t);
+    Ta   = T0 + dT*exp(-(xc-W/2).^2./(2*sgma0^2)) ...
+                dT*exp(-(xc-W/2+W).^2./(2*sgma0^2)) ...
+                dT*exp(-(xc-W/2-W).^2./(2*sgma0^2));
 
     % plot model progress
     if ~mod(k,nop)

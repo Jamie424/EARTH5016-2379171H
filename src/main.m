@@ -15,12 +15,12 @@ dt     = CFL * min(dt_adv,dt_dff); % time step [s]
 % set up ghosted index lists for boundary conditions
 switch BC
     case 'periodic'
-        ind3 = [     N,1:N,1   ];  % 3-point stencil            |-- i-1 --|-- i --|-- i+1 --|
-        ind5 = [N-1, N,1:N,1 ,2];  % 5-point stencil  |-- i-2 --|-- i-1 --|-- i --|-- i+1 --|-- i+2 --|
+        ind3 = [     N, 1:N, 1   ];  % 3-point stencil            |-- i-1 --|-- i --|-- i+1 --|
+        ind5 = [N-1, N, 1:N, 1 ,2];  % 5-point stencil  |-- i-2 --|-- i-1 --|-- i --|-- i+1 --|-- i+2 --|
     case 'insulating'
         % example non-periodic indexing for N=4 
-        ind3 = [   1,1:N,N    ];  % 3-point stencil            |-- i-1 --|-- i --|-- i+1 --|
-        ind5 = [   1,2:N+1,N+2];  % 5-point stencil  |-- i-2 --|-- i-1 --|-- i --|-- i+1 --|-- i+2 --|
+        ind3 = [     1, 1:N, N   ];  % 3-point stencil            |-- i-1 --|-- i --|-- i+1 --|
+        ind5 = [  1, 1, 1:N, N, N];  % 5-point stencil  |-- i-2 --|-- i-1 --|-- i --|-- i+1 --|-- i+2 --|
 end
 
 % set initial condition for temperature at cell centres

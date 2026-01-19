@@ -81,7 +81,7 @@ end
 
 
 %*****  calculate and display numerical error norm
-Err = (complete here);
+Err = rms(T - Ta) / rms(Ta);
 
 disp(' ');
 disp(['Advection scheme: ',ADVN]);
@@ -156,22 +156,22 @@ u_pos = max(0,u);    % positive velocity (to the right)
 u_neg = min(0,u);    % negative velocity (to the left)
 
 % get values on stencil nodes
-f_imm  = f(complete here);  % i-2
-f_im   = f(complete here);  % i-1
+f_imm  = f(ind(1:end-4));  % i-2
+f_im   = f(ind(2:end-3));  % i-1   
 f_ic   = f(ind(3:end-2));  % i
-f_ip   = f(complete here);  % i+1
-f_ipp  = f(complete here);  % i+2
+f_ip   = f(ind(4:end-1));  % i+1
+f_ipp  = f(ind(5:end  ));  % i+2
 
 % get interpolated field values on i+1/2, i-1/2 cell faces
 switch ADVN
     case 'UPW1'   % 1st-order upwind scheme
-        % positive velocity
-        f_ip_pos = f_ic;     % i+1/2
-        f_im_pos = f_im;     % i-1/2
+        % positive velocity -> boundary inherited from left
+        f_ip_pos = f_ic;     % i+1/2 value of right face look at center i 
+        f_im_pos = f_im;     % i-1/2 value of left face look at left node i-1
 
-        % negative velocity
-        f_ip_neg = f_ip;     % i+1/2
-        f_im_neg = f_ic;     % i-1/2
+        % negative velocity <- boundary inherited from right
+        f_ip_neg = f_ip;     % i+1/2 value of right face look at right node i+1 
+        f_im_neg = f_ic;     % i-1/2 value of left face look at center node i
 
     case 'CFD2'  % 2nd-order centred finite-difference scheme
         % positive velocity

@@ -26,4 +26,4 @@ nop   = 100;           % make output figure every 'nop' time steps
 
 
 %*****  RUN MODEL
-run('../src/main_solution.m');
+run('../src/main.m');

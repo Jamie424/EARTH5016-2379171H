@@ -24,7 +24,7 @@ switch BC
 end
 
 % set initial condition for temperature at cell centres
-T   = T0 + dT*exp(-(xc-W/2).^2./(2*sgma0));      % initialise T array at Tr
+T   = T0 + dT*exp(-(xc-W/2).^2./(2*sgm0^2));      % initialise T array at Tr
 Tin = T;                                         % store initial condition for plotting
 Ta  = T;                                         % initialise analytical solution
 
@@ -67,9 +67,9 @@ while t <= tend
 
     % get analytical solution at time t
     sgmt = sqrt(sgm0^2 +2*k0*t);
-    Ta   = T0 + dT*exp(-(xc-W/2).^2./(2*sgma0^2)) ...
-                dT*exp(-(xc-W/2+W).^2./(2*sgma0^2)) ...
-                dT*exp(-(xc-W/2-W).^2./(2*sgma0^2));
+    Ta   = T0 + dT*exp(-(xc-W/2).^2 ./ (2*sgm0^2)) ...
+              + dT*exp(-(xc-W/2+W).^2 ./ (2*sgm0^2)) ...
+              + dT*exp(-(xc-W/2-W).^2 ./ (2*sgm0^2));
 
     % plot model progress
     if ~mod(k,nop)
@@ -165,11 +165,11 @@ f_ipp  = f(ind(5:end  ));  % i+2
 % get interpolated field values on i+1/2, i-1/2 cell faces
 switch ADVN
     case 'UPW1'   % 1st-order upwind scheme
-        % positive velocity -> boundary inherited from left
+        % positive velocity          -> boundary inherited from left
         f_ip_pos = f_ic;     % i+1/2 value of right face look at center i 
         f_im_pos = f_im;     % i-1/2 value of left face look at left node i-1
 
-        % negative velocity <- boundary inherited from right
+        % negative velocity          <- boundary inherited from right
         f_ip_neg = f_ip;     % i+1/2 value of right face look at right node i+1 
         f_im_neg = f_ic;     % i-1/2 value of left face look at center node i
 

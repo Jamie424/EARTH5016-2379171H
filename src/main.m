@@ -8,8 +8,8 @@ xc = dx/2:dx:W-dx/2;    % coordinate vector for cell centre positions [m]
 xf = 0:dx:W;            % coordinate vectore for cell face positions [m]
 
 % set time step size
-dt_adv = (dx/2)/u0;
-dt_dff = (dx/2)^2/k0;
+dt_adv = (dx/2)   / u0;
+dt_dff = (dx/2)^2 / k0;
 dt     = CFL * min(dt_adv,dt_dff); % time step [s]
 
 % set up ghosted index lists for boundary conditions
@@ -25,8 +25,8 @@ end
 
 % set initial condition for temperature at cell centres
 T   = T0 + dT*exp(-(xc-W/2).^2./(2*sgm0^2));      % initialise T array at Tr
-Tin = T;                                         % store initial condition for plotting
-Ta  = T;                                         % initialise analytical solution
+Tin = T;                                          % store initial condition for plotting
+Ta  = T;                                          % initialise analytical solution
 
 % Initialise time count variables
 t = 0;  % initial time [s]
@@ -66,10 +66,10 @@ while t <= tend
     T = T + dTdt * dt;
 
     % get analytical solution at time t
-    sgmt = sqrt(sgm0^2 +2*k0*t);
-    Ta   = T0 + dT*exp(-(xc-W/2).^2 ./ (2*sgm0^2)) ...
-              + dT*exp(-(xc-W/2+W).^2 ./ (2*sgm0^2)) ...
-              + dT*exp(-(xc-W/2-W).^2 ./ (2*sgm0^2));
+    sgmt = sqrt(sgm0^2 + 2*k0*t);
+    Ta   = T0 + dT*(sgm0/sgmt)*exp(-(xc-W/2  ).^2 ./ (2*sgm0^2)) ...
+              + dT*(sgm0/sgmt)*exp(-(xc-W/2+W).^2 ./ (2*sgm0^2)) ...
+              + dT*(sgm0/sgmt)*exp(-(xc-W/2-W).^2 ./ (2*sgm0^2));
 
     % plot model progress
     if ~mod(k,nop)
@@ -179,8 +179,8 @@ switch ADVN
         f_im_pos = (f_ic+f_im)./2;     % i-1/2
 
         % negative velocity
-        f_ip_neg = f_ip_pos;          % i+1/2
-        f_im_neg = f_im_pos;          % i-1/2
+        f_ip_neg = f_ip_pos;           % i+1/2
+        f_im_neg = f_im_pos;           % i-1/2
 
     case 'UPW3'  % 3rd-order upwind scheme
         % positive velocity
@@ -195,12 +195,12 @@ end
 % calculate advection fluxes on i+1/2, i-1/2 cell faces
 
 % positive velocity
-q_ip_pos = u_pos.*f_ip_pos;
-q_im_pos = u_pos.*f_im_pos;
+q_ip_pos = u_pos.*f_ip_pos;        % flux on right face i+1/2 
+q_im_pos = u_pos.*f_im_pos;        % flux on left face  i-1/2
 
 % negative velocity
-q_ip_neg = u_neg.*f_ip_neg;
-q_im_neg = u_neg.*f_im_neg;
+q_ip_neg = u_neg.*f_ip_neg;        % flux on right face i+1/2 
+q_im_neg = u_neg.*f_im_neg;        % flux on left face  i-1/2
 
 % advection flux balance for rate of change
 div_q_pos = (q_ip_pos - q_im_pos)/dx;  % positive velocity

@@ -20,10 +20,30 @@ ADVN  = 'UPW3';        % advection scheme ('UPW1', 'CFD2', 'UPW3')
 TINT  = 'RK2';         % time integration scheme ('FE1', 'RK2')
 
 yr    = 3600*24*365;   % seconds per year [s]
-tend  = W/max(u0,k0);  % stopping time [s]
+tend  = 4 * W/max(u0,k0);  % stopping time [s]
 CFL   = 1/4;           % time step limiter
 nop   = 100;           % make output figure every 'nop' time steps
 
 
 %*****  RUN MODEL
 run('../src/main.m');
+
+
+
+
+% Qualitive test for performance of ADVN schemes
+
+% k0 = 0 no diffusion, u0 = 1e-6 advection speed, 
+% periodic BC, RK2 time integration
+
+% UPW1 suffers from heavy diffusion at longer time frames as there is
+% smoothing and decay compared to analytical solution.
+
+% centred differencing on the other hand is plagued by numerical dispersion
+% as there are oscillations on the left, as the velocity is directional to
+% the right and hence not symmetric
+
+% UPW3 3rd order upwind scheme reduces the error rate and is noticeably
+% closer to analytical solution. Higher accuracy as rate of change is
+% evaluated and updated three times, decreasing the discretisation error 
+% each time 

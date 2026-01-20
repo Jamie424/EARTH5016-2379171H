@@ -29,7 +29,7 @@ nop   = 100;           % make output figure every 'nop' time steps
 run('../src/main.m');
 
 
-
+%%%%%%%%%%%%%%%%%%%%%%
 
 % Qualitive test for performance of ADVN schemes
 
@@ -47,3 +47,10 @@ run('../src/main.m');
 % closer to analytical solution. Higher accuracy as rate of change is
 % evaluated and updated three times, decreasing the discretisation error 
 % each time 
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Errors to fix - the analytical solution dotted plot is not moving to the
+% right with advection. It does however diffuse when adding a diffusion
+% term. 
+

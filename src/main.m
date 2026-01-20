@@ -67,9 +67,9 @@ while t <= tend
 
     % get analytical solution at time t
     sgmt = sqrt(sgm0^2 + 2*k0*t);
-    Ta   = T0 + dT*(sgm0/sgmt)*exp(-(xc-W/2  ).^2 ./ (2*sgm0^2)) ...
-              + dT*(sgm0/sgmt)*exp(-(xc-W/2+W).^2 ./ (2*sgm0^2)) ...
-              + dT*(sgm0/sgmt)*exp(-(xc-W/2-W).^2 ./ (2*sgm0^2));
+    Ta   = T0 + dT*(sgm0/sgmt)*exp(-(xc -  (W/2)- u0*t).^2 ./ (2*sgmt^2)) ...
+              + dT*(sgm0/sgmt)*exp(-(xc -(3*W/2)- u0*t).^2 ./ (2*sgmt^2)) ...
+              + dT*(sgm0/sgmt)*exp(-(xc +   W/2 - u0*t).^2 ./ (2*sgmt^2));
 
     % plot model progress
     if ~mod(k,nop)
@@ -134,6 +134,7 @@ q = - k * diff(f(ind)) / dx;
 % calculate diffusion flux balance for rate of change
 dfdt = - diff(q) / dx;
 
+% Note: start of function defines the output dfdt
 end
 
 
@@ -184,7 +185,7 @@ switch ADVN
 
     case 'UPW3'  % 3rd-order upwind scheme
         % positive velocity
-        f_ip_pos = (2*f_ip + 5*f_ic - f_im )./6;     % i+1/2
+        f_ip_pos = (2*f_ip + 5*f_ic - f_im )./6;     % i+1/2                Note: f_ip_pos - f_im_pos later to get the 3rd order upwind scheme in slides
         f_im_pos = (2*f_ic + 5*f_im - f_imm)./6;     % i-1/2     
 
         % negative velocity
@@ -203,7 +204,7 @@ q_ip_neg = u_neg.*f_ip_neg;        % flux on right face i+1/2
 q_im_neg = u_neg.*f_im_neg;        % flux on left face  i-1/2
 
 % advection flux balance for rate of change
-div_q_pos = (q_ip_pos - q_im_pos)/dx;  % positive velocity
+div_q_pos = (q_ip_pos - q_im_pos)/dx;  % positive velocity                  
 div_q_neg = (q_ip_neg - q_im_neg)/dx;  % negative velocity
 
 div_q     = div_q_pos + div_q_neg;     % combined

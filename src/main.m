@@ -67,8 +67,7 @@ while t <= tend
 
     switch SCHEME
         case 'explicit' 
-            % select time integration scheme
-            switch TINT
+            switch TINT % select time integration scheme
                 case 'FE1'  % 1st-order Forward Euler time integration scheme
                     
                     % get rate of change
@@ -83,13 +82,13 @@ while t <= tend
                               + advection(T+dTdt_half*dt/2,u0,dx,ind5,ADVN);
             end    
         case 'implicit'
-            switch 
-                case 'BE1' % implicit scheme: 1st-order Backward Euler (BE1) 
-                    %%%input BE1 scheme
-                    %%%
-                case 'CN2' % Semi-implicit Scheme: 2nd-order Crank-Nicolson (CN2) 
-                    %%%input CN2 scheme
-                    %%%
+            switch TINT % select time integration scheme
+                case 'BE1' % implicit: 1st-order Backward Euler (BE1) 
+                    A = At + Ax;           % get coefficient matrix
+                    b = At*T.';            % prepare forcing vector
+                case 'CN2' % Semi-implicit: 2nd-order Crank-Nicolson (CN2) 
+                    A = At + Ax/2;         % get coefficient matrix 
+                    b = At*T.'-Ax*T.'/2; % get forcing vecotr
             end    
     end
 

@@ -19,8 +19,8 @@ switch BC
         ind5 = [N-1, N, 1:N, 1 ,2];  % 5-point stencil  |-- i-2 --|-- i-1 --|-- i --|-- i+1 --|-- i+2 --|
     case 'insulating'
         % example non-periodic indexing for N=4 
-        ind3 = [   1, 1:N, N   ];  % 3-point stencil            |-- i-1 --|-- i --|-- i+1 --|
-        ind5 = [1, 1, 1:N, N, N];  % 5-point stencil  |-- i-2 --|-- i-1 --|-- i --|-- i+1 --|-- i+2 --|
+        ind3 = [     1, 1:N, N   ];  % 3-point stencil            |-- i-1 --|-- i --|-- i+1 --|
+        ind5 = [1,   1, 1:N, N, N];  % 5-point stencil  |-- i-2 --|-- i-1 --|-- i --|-- i+1 --|-- i+2 --|
 end
 
 % set initial condition for temperature at cell centres
@@ -38,6 +38,7 @@ makefig(xc,T,Tin,Ta,0);
 
 
 %********** Implicit scheme setup
+
 % set temporal coefficient matrix
 At = speye(N,N) * 1/dt; % N x N sparse diagonal matrix with 1/dt on diagonal
 
@@ -45,15 +46,19 @@ At = speye(N,N) * 1/dt; % N x N sparse diagonal matrix with 1/dt on diagonal
 i = []; j = []; % initialise i,j as empty lists 
 i = [i, ind3(2:end-1)]; j = [j, ind3(2:end-1)]; % centre stencil node i 
 i = [i, ind3(2:end-1)]; j = [j, ind3(1:end-2)]; % left stencil node i-1 
-i = [i, ind3(2:end-1)]; j = [j, ind3(3:end )];  % right stencil node i+1 
+i = [i, ind3(2:end-1)]; j = [j, ind3(3:end  )]; % right stencil node i+1 
 
 % add coefficient values to value list 
 a = []; % initialise a as empty list 
-a = [a, ( +2*k0/dx^2)];       % centre stencil node i 
-a = [a, -(u0/2/dx- k0/dx^2)]; % left stencil node i-1 
-a = [a, (u0/2/dx- k0/dx^2)];  % right stencil node i+1
+a = [a,  ( +2*k0/dx^2)        * ones(1,N)];       % centre stencil node i 
+a = [a, -(u0/(2*dx)- k0/dx^2) * ones(1,N)];       % left stencil node i-1   Note: vector of 1s length N-2 as ind3(2:end-1) is length N-2
+a = [a,  (u0/(2*dx)- k0/dx^2) * ones(1,N)];       % right stencil node i+1
 
-Ax = sparse(i,j,a,N,N);  % place values a at positions (i,j) in NxN matrix
+disp([numel(i), numel(j), numel(a)])  % length of i,j and a must be equal to pair the three together in Ax
+
+Ax = sparse(i,j,a,N,N);   % place values a at positions (i,j) in NxN matrix
+A_BE = At + Ax;           % coefficient matrix for BE1 scheme
+A_CN = At + Ax/2;         % coefficient matrix for CN2 scheme
 
 %*****  Solve Model Equations
 
@@ -62,7 +67,8 @@ while t <= tend
     % increment time and step count
     t = t+dt;
     k = k+1;
-
+    
+    
     switch SCHEME
         case 'explicit' 
             switch TINT % select time integration scheme
@@ -76,21 +82,22 @@ while t <= tend
                               + advection(T               ,u0,dx,ind5,ADVN);
                     dTdt      = diffusion(T+dTdt_half*dt/2,k0,dx,ind3) ...
                               + advection(T+dTdt_half*dt/2,u0,dx,ind5,ADVN);
-            end    
+            end
+            % update temperature
+            T = T + dTdt * dt;
+
         case 'implicit'
             switch TINT % select time integration scheme
                 case 'BE1' % implicit: 1st-order Backward Euler (BE1) 
-                    A = At + Ax;           % get coefficient matrix
                     b = At*T.';            % prepare forcing vector
+                    T = (A_BE \ b).';  % solve linear system of equations
 
                 case 'CN2' % Semi-implicit: 2nd-order Crank-Nicolson (CN2) 
-                    A = At + Ax/2;         % get coefficient matrix 
                     b = At*T.'- Ax*T.'/2;   % get forcing vector
+                    T = (A_CN \ b).';  % solve linear system of equations
             end    
     end
 
-    % update temperature
-    T = T + dTdt * dt;
 
     % get analytical solution at time t
     sgmt = sqrt(sgm0^2 + 2*k0*t);

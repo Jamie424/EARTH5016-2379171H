@@ -45,21 +45,32 @@ while t <= tend
     t = t+dt;
     k = k+1;
 
-    % select time integration scheme
-    switch TINT
-        case 'FE1'  % 1st-order Forward Euler time integration scheme
-            
-            % get rate of change
-            dTdt = diffusion(T,k0,dx,ind3) ...
-                 + advection(T,u0,dx,ind5,ADVN);
-
-        case 'RK2'  % 2nd-order Runge-Kutta time integration scheme
-            
-            dTdt_half = diffusion(T               ,k0,dx,ind3) ...
-                      + advection(T               ,u0,dx,ind5,ADVN);
-            dTdt      = diffusion(T+dTdt_half*dt/2,k0,dx,ind3) ...
-                      + advection(T+dTdt_half*dt/2,u0,dx,ind5,ADVN);
-
+    switch SCHEME
+        case 'explicit' 
+            % select time integration scheme
+            switch TINT
+                case 'FE1'  % 1st-order Forward Euler time integration scheme
+                    
+                    % get rate of change
+                    dTdt = diffusion(T,k0,dx,ind3) ...
+                         + advection(T,u0,dx,ind5,ADVN);
+        
+                case 'RK2'  % 2nd-order Runge-Kutta time integration scheme
+                    
+                    dTdt_half = diffusion(T               ,k0,dx,ind3) ...
+                              + advection(T               ,u0,dx,ind5,ADVN);
+                    dTdt      = diffusion(T+dTdt_half*dt/2,k0,dx,ind3) ...
+                              + advection(T+dTdt_half*dt/2,u0,dx,ind5,ADVN);
+            end    
+        case 'implicit'
+            switch 
+                case 'BE1' % implicit scheme: 1st-order Backward Euler (BE1) 
+                    %%%input BE1 scheme
+                    %%%
+                case 'CN2' % Semi-implicit Scheme: 2nd-order Crank-Nicolson (CN2) 
+                    %%%input CN2 scheme
+                    %%%
+            end    
     end
 
     % update temperature

@@ -19,8 +19,8 @@ switch BC
         ind5 = [N-1, N, 1:N, 1 ,2];  % 5-point stencil  |-- i-2 --|-- i-1 --|-- i --|-- i+1 --|-- i+2 --|
     case 'insulating'
         % example non-periodic indexing for N=4 
-        ind3 = [     1, 1:N, N   ];  % 3-point stencil            |-- i-1 --|-- i --|-- i+1 --|
-        ind5 = [  1, 1, 1:N, N, N];  % 5-point stencil  |-- i-2 --|-- i-1 --|-- i --|-- i+1 --|-- i+2 --|
+        ind3 = [   1, 1:N, N   ];  % 3-point stencil            |-- i-1 --|-- i --|-- i+1 --|
+        ind5 = [1, 1, 1:N, N, N];  % 5-point stencil  |-- i-2 --|-- i-1 --|-- i --|-- i+1 --|-- i+2 --|
 end
 
 % set initial condition for temperature at cell centres
@@ -35,6 +35,26 @@ k = 0;  % initial time step count
 % initialise output figure with initial condition
 figure(1); clf
 makefig(xc,T,Tin,Ta,0);
+
+
+
+%********** Implicit scheme setup
+% set temporal coefficient matrix
+At = speye(N,N) * 1/dt; % N x N sparse diagonal matrix with 1/dt on diagonal
+
+% use mapping array to add indices to index lists for spatial coefficients 
+i = []; j = []; % initialise i,j as empty lists 
+i = [i, ind3(2:end-1)]; j = [j, ind3(2:end-1)]; % centre stencil node i 
+i = [i, ind3(2:end-1)]; j = [j, ind3(1:end-2)]; % left stencil node i-1 
+i = [i, ind3(2:end-1)]; j = [j, ind3(3:end )];  % right stencil node i+1 
+
+% add coefficient values to value list 
+a = []; % initialise a as empty list 
+a = [a, ( +2*k0/dx^2)];       % centre stencil node i 
+a = [a, -(u0/2/dx- k0/dx^2)]; % left stencil node i-1 
+a = [a, (u0/2/dx- k0/dx^2)];  % right stencil node i+1
+
+
 
 
 %*****  Solve Model Equations

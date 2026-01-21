@@ -10,7 +10,7 @@ for cc = 1:3
 
 % set model parameters
 W     = 1000;          % domain width [m]
-N     = 4000;           % grid size
+N     = 5000;           % grid size
 dx    = W/N;           % grid spacing
 
 T0    = 100;           % initial background temperature [C]
@@ -22,7 +22,7 @@ u0    = 1e-6;          % advection speed [m/s]
 
 BC    = 'periodic';    % boundary condition option flag ('insulating', 'periodic')
 ADVN  = 'UPW3';        % advection scheme ('UPW1', 'CFD2', 'UPW3')
-TINT  = 'RK2';         % time integration scheme ('FE1', 'RK2')
+TINT  = 'FE1';         % time integration scheme ('FE1', 'RK2')
 
 yr    = 3600*24*365;   % seconds per year [s]
 tend  = W/max(u0,k0);  % stopping time [s]

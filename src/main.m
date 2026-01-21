@@ -61,7 +61,6 @@ A_BE = At + Ax;           % coefficient matrix for BE1 scheme
 A_CN = At + Ax/2;         % coefficient matrix for CN2 scheme
 
 %*****  Solve Model Equations
-
 while t <= tend
 
     % increment time and step count
@@ -89,12 +88,12 @@ while t <= tend
         case 'implicit'
             switch TINT % select time integration scheme
                 case 'BE1' % implicit: 1st-order Backward Euler (BE1) 
-                    b = At*T.';            % prepare forcing vector
-                    T = (A_BE \ b).';  % solve linear system of equations
+                    b = At*T.';            % prepare forcing vector 
+                    T = (A_BE \ b).';      % solve linear system of equations
 
                 case 'CN2' % Semi-implicit: 2nd-order Crank-Nicolson (CN2) 
                     b = At*T.'- Ax*T.'/2;   % get forcing vector
-                    T = (A_CN \ b).';  % solve linear system of equations
+                    T = (A_CN \ b).';       % solve linear system of equations 
             end    
     end
 
@@ -111,7 +110,7 @@ while t <= tend
         pause(0.1);
     end
 
-end
+
 
 
 %*****  calculate and display numerical error norm
@@ -123,7 +122,7 @@ disp(['Time integration scheme: ',TINT]);
 disp(['Numerical error = ',num2str(Err)]);
 disp(' ');
 
-
+end
 
 %*****  Utility Functions  ************************************************
 

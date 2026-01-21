@@ -17,7 +17,8 @@ u0    = 1e-6;          % advection speed [m/s]
 
 BC    = 'periodic';    % boundary condition option flag ('insulating', 'periodic')
 ADVN  = 'UPW3';        % advection scheme ('UPW1', 'CFD2', 'UPW3')
-TINT  = 'RK2';         % time integration scheme ('FE1', 'RK2')
+TINT  = 'RK2';         % time integration scheme (Explicit:'FE1', 'RK2') (Implicit:'BE1', 'CE2')
+SCHEME = 'implicit';   % Implicit or explicit scheme ('explicit', 'implicit')
 
 yr    = 3600*24*365;   % seconds per year [s]
 tend  = W/max(u0,k0);  % stopping time [s]

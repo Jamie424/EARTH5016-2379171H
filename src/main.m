@@ -67,9 +67,9 @@ while t <= tend
 
     % get analytical solution at time t
     sgmt = sqrt(sgm0^2 + 2*k0*t);
-    Ta   = T0 + dT*(sgm0/sgmt)*exp(-(xc -  (W/2)- u0*t).^2 ./ (2*sgmt^2)) ...
-              + dT*(sgm0/sgmt)*exp(-(xc -(3*W/2)- u0*t).^2 ./ (2*sgmt^2)) ...
-              + dT*(sgm0/sgmt)*exp(-(xc +   W/2 - u0*t).^2 ./ (2*sgmt^2));
+    Ta   = T0 + dT*(sgm0/sgmt)*exp(-(xc -(W/2)    - u0*t).^2 ./ (2*sgmt^2)) ...
+              + dT*(sgm0/sgmt)*exp(-(xc -(W/2 + W)- u0*t).^2 ./ (2*sgmt^2)) ...
+              + dT*(sgm0/sgmt)*exp(-(xc -(W/2 - W)- u0*t).^2 ./ (2*sgmt^2));
 
     % plot model progress
     if ~mod(k,nop)
@@ -81,7 +81,7 @@ end
 
 
 %*****  calculate and display numerical error norm
-Err = rms(T - Ta) / rms(Ta);
+Err = rms(T - Ta, 'all') / rms(Ta, 'all');
 
 disp(' ');
 disp(['Advection scheme: ',ADVN]);

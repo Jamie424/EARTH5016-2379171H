@@ -51,7 +51,7 @@ i = [i, ind3(2:end-1)]; j = [j, ind3(3:end  )]; % right stencil node i+1
 % add coefficient values to value list 
 a = []; % initialise a as empty list 
 a = [a,  ( +2*k0/dx^2)        * ones(1,N)];       % centre stencil node i 
-a = [a, -(u0/(2*dx)- k0/dx^2) * ones(1,N)];       % left stencil node i-1   Note: vector of 1s length N-2 as ind3(2:end-1) is length N-2
+a = [a, -(u0/(2*dx)- k0/dx^2) * ones(1,N)];       % left stencil node i-1
 a = [a,  (u0/(2*dx)- k0/dx^2) * ones(1,N)];       % right stencil node i+1
 
 disp([numel(i), numel(j), numel(a)])  % length of i,j and a must be equal to pair the three together in Ax

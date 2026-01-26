@@ -32,18 +32,19 @@ switch BC
 end
 
 % set initial coefficient fields
-kT  = kT0  .* ones(Nz,Nx);
-cP  = cP0  .* ones(Nz,Nx);
-rho = rho0 .* ones(Nz,Nx);
-Qr  = Qr0  .* ones(Nz,Nx);
+kT  = kT0  .* ones(Nz,Nx);         % matrix of initial thermal conductivity [W/m/K]
+cP  = cP0  .* ones(Nz,Nx);         % heat capacity [J/kg/K]
+rho = rho0 .* ones(Nz,Nx);         % density [kg/m3]
+Qr  = Qr0  .* ones(Nz,Nx);         % heat productivity [W/m3]
 
 % set initial velocity field
-w = w0 .* ones(Nz+1,Nx);
-u = u0 .* ones(Nz,Nx+1);
+w = w0 .* ones(Nz+1,Nx);          % advection x-speed [m/s]
+u = u0 .* ones(Nz,Nx+1);          % advection z-speed [m/s]
 
-% set time step size
-dt_adv = (h/2)   / max(max(u(:)),max(max(w(:))) + eps); 
-dt_dff = (h/2)^2 / max(kT(:)./rho./cP(:)+eps);
+% set time step size (Courant–Friedrichs–Lewy condition)
+dt_adv = (h/2)   / max(abs(u(:)) + abs(w(:)) + eps); 
+dt_dff = (h/2)^2 / max(kT(:)./rho(:)./cP(:)+eps);
+CFL = 0.5;                                               
 dt     = CFL * min(dt_adv,dt_dff); % time step [s]
 
 % set initial temperature field
@@ -97,14 +98,14 @@ while t <= tend
             switch TINT % select time integration scheme
                 case 'FE1'  % 1st-order Forward Euler time integration scheme
                     % get rate of change
-                    dTdt = diffusion(T,k0,dx,ind3) ...
-                         + advection(T,u0,dx,ind5,ADVN);
+                    dTdt = ((diffusion(T,k,h,ix,iz3) + Qr0)./(rho0*cp0))  ...
+                           - advection(T,u0,w0,h,iz5,ADVN);
         
                 case 'RK2'  % 2nd-order Runge-Kutta time integration scheme
-                    dTdt_half = diffusion(T               ,k0,dx,ind3) ...
-                              + advection(T               ,u0,dx,ind5,ADVN);
-                    dTdt      = diffusion(T+dTdt_half*dt/2,k0,dx,ind3) ...
-                              + advection(T+dTdt_half*dt/2,u0,dx,ind5,ADVN);
+                    dTdt_half = diffusion(T               ,k,h,ix,iz) + Qr0 ./(rho0*cp0) ...
+                              + advection(T,u0,dx,ind5,ADVN);
+                    dTdt      = diffusion(T+dTdt_half*dt/2,k0,dx,iz3) ...
+                              + advection(T+dTdt_half*dt/2,u0,dx,iz5,ADVN);
             end
             % update temperature
             T = T + dTdt * dt;
@@ -123,10 +124,7 @@ while t <= tend
 
 
     % get analytical solution at time t
-    sgmt = sqrt(sgm0^2 + 2*k0*t);
-    Ta   = T0 + dT*(sgm0/sgmt)*exp(-(xc -(W/2)    - u0*t).^2 ./ (2*sgmt^2)) ...
-              + dT*(sgm0/sgmt)*exp(-(xc -(W/2 + W)- u0*t).^2 ./ (2*sgmt^2)) ...
-              + dT*(sgm0/sgmt)*exp(-(xc -(W/2 - W)- u0*t).^2 ./ (2*sgmt^2));
+    analytical(T0,df,sgm0,k0,u0,w0,Xc,Zc,D,W,t)
 
     % plot model progress
     if ~mod(k,nop)
@@ -204,28 +202,33 @@ end
 
 %*****  Function to calculate advection rate
 
-function dfdt = advection(f,u,dx,ind,ADVN)
+function dfdt = advection(f,u,w,h,ix,iz,ADVN)
 
 % input arguments
 % f:    advected scalar field
-% u:    advection velocity
-% dx:   grid spacing
-% ind:  ghosted index list
+% u:    advection velocity x direction 
+% w:    advection velocity z direction
+% h:    grid spacing
+% ix:  ghosted index list x direction
+% iz:  ghosted index list z direction
 % ADVN: advection scheme
 
 % output variables
 % dfdt: advection rate of scalar field
+
+
+%****** horizontal advection (x direction)
 
 % split the velocities into positive and negative
 u_pos = max(0,u);    % positive velocity (to the right)
 u_neg = min(0,u);    % negative velocity (to the left)
 
 % get values on stencil nodes
-f_imm  = f(ind(1:end-4));  % i-2
-f_im   = f(ind(2:end-3));  % i-1   
-f_ic   = f(ind(3:end-2));  % i
-f_ip   = f(ind(4:end-1));  % i+1
-f_ipp  = f(ind(5:end  ));  % i+2
+f_imm  = f(:,ix(1:end-4));  % i-2
+f_im   = f(:,ix(2:end-3));  % i-1   
+f_ic   = f(:,ix(3:end-2));  % i
+f_ip   = f(:,ix(4:end-1));  % i+1
+f_ipp  = f(:,ix(5:end  ));  % i+2
 
 % get interpolated field values on i+1/2, i-1/2 cell faces
 switch ADVN
@@ -233,7 +236,7 @@ switch ADVN
         % positive velocity          -> boundary inherited from left
         f_ip_pos = f_ic;     % i+1/2 value of right face look at center i 
         f_im_pos = f_im;     % i-1/2 value of left face look at left node i-1
-
+        
         % negative velocity          <- boundary inherited from right
         f_ip_neg = f_ip;     % i+1/2 value of right face look at right node i+1 
         f_im_neg = f_ic;     % i-1/2 value of left face look at center node i
@@ -268,11 +271,32 @@ q_ip_neg = u_neg.*f_ip_neg;        % flux on right face i+1/2
 q_im_neg = u_neg.*f_im_neg;        % flux on left face  i-1/2
 
 % advection flux balance for rate of change
-div_q_pos = (q_ip_pos - q_im_pos)/dx;  % positive velocity                  
-div_q_neg = (q_ip_neg - q_im_neg)/dx;  % negative velocity
+div_qx_pos = (q_ip_pos - q_im_pos)/h;  % positive velocity                  
+div_qx_neg = (q_ip_neg - q_im_neg)/h;  % negative velocity
 
-div_q     = div_q_pos + div_q_neg;     % combined
-dfdt      = - div_q;                   % advection rate
+div_qx     = div_q_pos + div_q_neg;     % combined flux x direction
+
+div_q = div_qx + div_qz     % xflux + z flux
+dfdt  = - div_q;            % advection rate
+
+
+
+%****** horizontal advection (x direction)
+
+
+% split the velocities into positive and negative
+w_pos = max(0,w);    % positive velocity (to the right)
+w_neg = min(0,w);    % negative velocity (to the left)
+
+
+f_jmm = f(iz(1:end-4),:);   % i - 2
+f_jm  = f(iz(2:end-3),:);   % i - 1
+f_jc  = f(iz(3:end-2),:);   % i
+f_jp  = f(iz(4:end-1),:);   % i + 1
+f_jpp = f(iz(5:end  ),:);   % i + 2
+
+
+
 
 end
 
@@ -280,14 +304,16 @@ end
 function Ta = analytical(f0,df,sgm0,k0,u0,w0,Xc,Zc,D,W,t)
 
 sgmt = sqrt(sgm0^2 + 2*k0*t);
-Ta   = f0 + dT*(sgm0/sgmt)*exp(-(xc -(W/2)    - u0*t).^2 ./ (4*sgmt^2)) ...
-          + dT*(sgm0/sgmt)*exp(-(xc -(W/2 + W)- u0*t).^2 ./ (4*sgmt^2)) ...
-          + dT*(sgm0/sgmt)*exp(-(xc -(W/2 - W)- u0*t).^2 ./ (4*sgmt^2));
-
-
-          + dT*(sgm0/sgmt)*exp(-(Zc -(W/2)    - w0*t).^2 ./ (4*sgmt^2)) ...
-          + dT*(sgm0/sgmt)*exp(-(Zc -(W/2 + W)- w0*t).^2 ./ (4*sgmt^2)) ...
-          + dT*(sgm0/sgmt)*exp(-(Zc -(W/2 - W)- w0*t).^2 ./ (4*sgmt^2))
+% sum each of the 9 combinations
+Ta   = f0 + dT*(sgm0/sgmt)*(exp(-(Xc-(W/2    )- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (2*sgmt^2)) ...
+                          + exp(-(Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (2*sgmt^2)) ...
+                          + exp(-(Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (2*sgmt^2)) ...
+                          + exp(-(Xc-(W/2    )- w0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (2*sgmt^2)) ...
+                          + exp(-(Xc-(W/2    )- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (2*sgmt^2)) ...
+                          + exp(-(Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (2*sgmt^2)) ...
+                          + exp(-(Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (2*sgmt^2)) ...
+                          + exp(-(Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (2*sgmt^2))...
+                          + exp(-(Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (2*sgmt^2)))
 
 end
 %test

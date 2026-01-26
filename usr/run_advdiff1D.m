@@ -10,12 +10,12 @@ Nz    = 100;           % grid size z-direction
 Nx    = Nz*W/D;        % grid size x-direction
 h     = D/Nz           % grid spacing (h = dx = dz)
 
-kT0 = 2;               % thermal conductivity [W/m/K]
-rho0 = 2700;           % density [kg/m3]
-cP0 = 1100;            % heat capacity [J/kg/K]
-Qr0 = 1e-6;            % heat productivity [W/m3]
-u0 = 1e-6;             % advection x-speed [m/s]
-w0 = 1e-6;             % advection z-speed [m/s]
+kT0   = 2;             % thermal conductivity [W/m/K]
+rho0  = 2700;          % density [kg/m3]
+cP0   = 1100;          % heat capacity [J/kg/K]
+Qr0   = 1e-6;          % heat productivity [W/m3]
+u0    = 1e-6;          % advection x-speed [m/s]
+w0    = 1e-6;          % advection z-speed [m/s]
 
 T0    = 100;           % initial background temperature [C]
 dT    = 1000;          % initial temperature peak amplitude [C]
@@ -27,7 +27,7 @@ u0    = 1e-6;          % advection speed [m/s]
 BC    = 'periodic';    % boundary condition option flag ('insulating', 'periodic')
 ADVN  = 'UPW3';        % advection scheme ('UPW1', 'CFD2', 'UPW3')
 TINT  = 'CN2';         % time integration scheme (Explicit:'FE1', 'RK2') (Implicit:'BE1', 'CN2')
-SCHEME= 'implicit';   % Implicit or explicit scheme ('explicit', 'implicit')
+SCHEME= 'implicit';    % Implicit or explicit scheme ('explicit', 'implicit')
 
 yr    = 3600*24*365;   % seconds per year [s]
 tend  = W/max(u0,k0);  % stopping time [s]

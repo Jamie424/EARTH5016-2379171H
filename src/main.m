@@ -17,18 +17,15 @@ switch BC
     case 'periodic'
         % 3-point stencil            |-- i-1 --|-- i --|-- i+1 --|
         % 5-point stencil  |-- i-2 --|-- i-1 --|-- i --|-- i+1 --|-- i+2 --|
-        ix3 = [      Nx, 1:Nx, 1   ];
-        ix5 = [Nx-1, Nx, 1:Nx, 1, 2];
-        iz3 = [      Nz, 1:Nz, 1   ];
-        iz5 = [Nz-1, Nz, 1:Nz, 1, 2]; 
+        ix3 = [      Nx, 1:Nx, 1   ];  iz3 = [      Nz, 1:Nz, 1   ];
+        ix5 = [Nx-1, Nx, 1:Nx, 1, 2];  iz5 = [Nz-1, Nz, 1:Nz, 1, 2];
+        
     case 'insulating'
         % example non-periodic indexing for N=4 
         % 3-point stencil            |-- i-1 --|-- i --|-- i+1 --|
         % 5-point stencil  |-- i-2 --|-- i-1 --|-- i --|-- i+1 --|-- i+2 --|
-        ix3 = [     1, 1:Nx, Nx    ]; 
-        ix5 = [1,   1, 1:Nx, Nx, Nx];  
-        iz3 = [     1, 1:Nz, Nz    ]; 
-        iz5 = [1,   1, 1:Nz, Nz, Nz];
+        ix3 = [   1, 1:Nx, Nx    ];  iz3 = [   1, 1:Nz, Nz    ];
+        ix5 = [1, 1, 1:Nx, Nx, Nx];  iz5 = [1, 1, 1:Nz, Nz, Nz]; 
 end
 
 % set initial coefficient fields
@@ -43,8 +40,7 @@ u = u0 .* ones(Nz,Nx+1);          % advection z-speed [m/s]
 
 % set time step size (Courant–Friedrichs–Lewy condition)
 dt_adv = (h/2)   / max(abs(u(:)) + abs(w(:)) + eps); 
-dt_dff = (h/2)^2 / max(kT(:)./rho(:)./cP(:)+eps);
-CFL = 0.5;                                               
+dt_dff = (h/2)^2 / max(kT(:)./rho(:)./cP(:) + eps);                                              
 dt     = CFL * min(dt_adv,dt_dff); % time step [s]
 
 % Initialise time count variables
@@ -65,27 +61,29 @@ makefig(xc,zc,T,Tin,Ta,0);
 while t <= tend
 
     % increment time and step count
-    t = t+dt;
-    k = k+1;
+    t = t + dt;
+    k = k + 1;
    
-    switch TINT % select time integration scheme
+    switch TINT % select explicit time integration scheme
         case 'FE1'  % 1st-order Forward Euler time integration scheme
             % get rate of change
-            dTdt = ((diffusion(T,k,h,ix,iz3) + Qr0)./(rho0*cp0))  ...
-                   - advection(T,u0,w0,h,iz5,ADVN);
+            dTdt = diffusion(T,kT,h,ix3,iz3)./(rho*cP)  ...
+                   - advection(T,u,w,h,ix5,iz5,ADVN) + Qr./(rho.*cP);
+                  
 
         case 'RK2'  % 2nd-order Runge-Kutta time integration scheme
-            dTdt_half = diffusion(T               ,k,h,ix,iz) + Qr0 ./(rho0*cp0) ...
-                      + advection(T,u0,dx,ind5,ADVN);
-            dTdt      = diffusion(T+dTdt_half*dt/2,k0,dx,iz3) ...
-                      + advection(T+dTdt_half*dt/2,u0,dx,iz5,ADVN);
-        end
+            dTdt_half = diffusion(T               ,kT,h,ix3,iz3)./(rho*cP) ...
+                      - advection(T               ,u,w,h,ix5,ix5,ADVN);
+            dTdt      = diffusion(T+dTdt_half*dt/2,kT, h,ix3,iz3)./(rho.*cP) ...
+                      - advection(T+dTdt_half*dt/2,u,w,h,ix5,iz5,ADVN) + Qr./(rho.*cP);
+                      
+    end
 
     % update temperature
     T = T + dTdt * dt;    
 
     % get analytical solution at time t
-    analytical(T0,df,sgm0,k0,u0,w0,Xc,Zc,D,W,t)
+    Ta = analytical(T0,dT,sgm0,k0,u0,w0,Xc,Zc,D,W,t);
 
     % plot model progress
     if ~mod(k,nop)
@@ -169,7 +167,7 @@ function dfdt = advection(f,u,w,h,ix,iz,ADVN)
 % h:    grid spacing
 % ix:  ghosted index list x direction
 % iz:  ghosted index list z direction
-% ADVN: advection scheme
+% ADVN: advection scheme ('UPW1', 'CFD2', 'UPW3')
 
 % output variables
 % dfdt: advection rate of scalar field
@@ -221,18 +219,18 @@ end
 % calculate advection fluxes on i+1/2, i-1/2 cell faces
 
 % positive velocity
-q_ip_pos = u_pos.*f_ip_pos;        % flux on right face i+1/2 
-q_im_pos = u_pos.*f_im_pos;        % flux on left face  i-1/2
+q_ip_pos = u_pos(:,2:end).*f_ip_pos;        % flux on right face i+1/2 
+q_im_pos = u_pos(:,1:end-1).*f_im_pos;        % flux on left face  i-1/2
 
 % negative velocity
-q_ip_neg = u_neg.*f_ip_neg;        % flux on right face i+1/2 
-q_im_neg = u_neg.*f_im_neg;        % flux on left face  i-1/2
+q_ip_neg = u_neg(:,2:end).*f_ip_neg;        % flux on right face i+1/2 
+q_im_neg = u_neg(:,1:end-1).*f_im_neg;        % flux on left face  i-1/2
 
 % advection flux balance for rate of change
 div_qx_pos = (q_ip_pos - q_im_pos)/h;  % positive velocity                  
 div_qx_neg = (q_ip_neg - q_im_neg)/h;  % negative velocity
 
-div_qx     = div_q_pos + div_q_neg;     % combined flux x direction
+div_qx     = div_qx_pos + div_qx_neg;     % combined flux x direction
 
 
 %****** vertical advection (z direction)
@@ -277,12 +275,12 @@ switch ADVN
         f_jm_neg = (2*f_jm + 5*f_jc - f_jp )./6;     % j-1/2
 
 % positive velocity
-q_jp_pos = w_pos .* f_jp_pos;      % flux on top    face j+1/2
-q_jm_pos = w_pos .* f_jm_pos;      % flux on bottom face j-1/2
+q_jp_pos = w_pos(2:end,:) .* f_jp_pos;      % flux on top    face j+1/2
+q_jm_pos = w_pos(1:end-1,:) .* f_jm_pos;      % flux on bottom face j-1/2
 
 % negative velocity
-q_jp_neg = w_neg .* f_jp_neg;      % flux on top    face j+1/2
-q_jm_neg = w_neg .* f_jm_neg;      % flux on bottom face j-1/2
+q_jp_neg = w_neg(2:end,:) .* f_jp_neg;      % flux on top    face j+1/2
+q_jm_neg = w_neg(1:end-1,:) .* f_jm_neg;      % flux on bottom face j-1/2
 
 % advection flux balance for rate of change (z-direction)
 div_qz_pos = (q_jp_pos - q_jm_pos)/h;   % positive velocity

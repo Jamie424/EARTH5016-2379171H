@@ -13,7 +13,7 @@ W     = 1e3;           % domain width [m]
 D     = 1e3;           % domain depth [m]
 Nz    = 100;           % grid size z-direction
 Nx    = Nz*W/D;        % grid size x-direction
-h     = D/Nz           % grid spacing (h = dx = dz)
+h     = D/Nz;           % grid spacing (h = dx = dz)
 
 kT0 = 2;               % thermal conductivity [W/m/K]
 rho0 = 2700;           % density [kg/m3]

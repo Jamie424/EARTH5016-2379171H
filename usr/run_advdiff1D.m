@@ -8,7 +8,7 @@ W     = 1e3;           % domain width [m]
 D     = 1e3;           % domain depth [m]
 Nz    = 100;           % grid size z-direction
 Nx    = Nz*W/D;        % grid size x-direction
-h     = D/Nz           % grid spacing (h = dx = dz)
+h     = D/Nz;           % grid spacing (h = dx = dz)
 
 kT0   = 2;             % thermal conductivity [W/m/K]
 rho0  = 2700;          % density [kg/m3]
@@ -26,8 +26,8 @@ u0    = 1e-6;          % advection speed [m/s]
 
 BC    = 'periodic';    % boundary condition option flag ('insulating', 'periodic')
 ADVN  = 'UPW3';        % advection scheme ('UPW1', 'CFD2', 'UPW3')
-TINT  = 'CN2';         % time integration scheme (Explicit:'FE1', 'RK2') (Implicit:'BE1', 'CN2')
-SCHEME= 'implicit';    % Implicit or explicit scheme ('explicit', 'implicit')
+TINT  = 'RK2';         % time integration scheme (Explicit:'FE1', 'RK2') (Implicit:'BE1', 'CN2')
+SCHEME= 'explicit';    % Implicit or explicit scheme ('explicit', 'implicit')
 
 yr    = 3600*24*365;   % seconds per year [s]
 tend  = W/max(u0,k0);  % stopping time [s]

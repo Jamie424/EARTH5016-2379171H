@@ -10,10 +10,7 @@ xf = 0:h:W ;               % x-coordinate vector for cell face positions [m]
 zf = 0:h:D ;               % z-coordinate vector for cell face positions [m]
 [Xc,Zc] = meshgrid(xc,zc); % create 2D coordinate arrays
 
-% set time step size
-dt_adv = (dx/2)   / u0;
-dt_dff = (dx/2)^2 / k0;
-dt     = CFL * min(dt_adv,dt_dff); % time step [s]
+
 
 % set up ghosted index lists for boundary conditions
 switch BC
@@ -28,25 +25,30 @@ switch BC
         % example non-periodic indexing for N=4 
         % 3-point stencil            |-- i-1 --|-- i --|-- i+1 --|
         % 5-point stencil  |-- i-2 --|-- i-1 --|-- i --|-- i+1 --|-- i+2 --|
-        ix3 = [     1, 1:Nx, Nx   ]; 
+        ix3 = [     1, 1:Nx, Nx    ]; 
         ix5 = [1,   1, 1:Nx, Nx, Nx];  
-        iz3 = [     1, 1:Nz, Nz   ]; 
+        iz3 = [     1, 1:Nz, Nz    ]; 
         iz5 = [1,   1, 1:Nz, Nz, Nz];
 end
 
 % set initial coefficient fields
-kT = kT0 .* ones(Nz,Nx);
-cP = cP0 .* ones(Nz,Nx);
+kT  = kT0  .* ones(Nz,Nx);
+cP  = cP0  .* ones(Nz,Nx);
 rho = rho0 .* ones(Nz,Nx);
-Qr = Qr0 .* ones(Nz,Nx);
+Qr  = Qr0  .* ones(Nz,Nx);
 
 % set initial velocity field
 w = w0 .* ones(Nz+1,Nx);
 u = u0 .* ones(Nz,Nx+1);
 
+% set time step size
+dt_adv = (h/2)   / max(max(u(:)),max(max(w(:)))+eps); 
+dt_dff = (h/2)^2 / max(kT(:)./rho./cP);
+dt     = CFL * min(dt_adv,dt_dff); % time step [s]
+
 % set initial temperature field
 T = analytical(T0,dT,sgm0,kT0./rho0./cP0,u0,w0,Xc,Zc,D,W,t);   % analytical solution in 2D
-T   = T0 + dT*exp(-(xc-W/2).^2./(2*sgm0^2));      
+%T   = T0 + dT*exp(-(xc-W/2).^2./(2*sgm0^2));      
 Tin = T;                                          % store initial condition for plotting
 Ta  = T;                                          % initialise analytical solution
 
@@ -172,22 +174,29 @@ end
 
 %*****  Function to calculate diffusion rate
 
-function dfdt = diffusion(f,k,dx,ind)
+function dfdt = diffusion(f,k,h,ix,iz)
 
 % input arguments
 % f:    diffusing scalar field
 % k:    diffusion coefficient
-% dx:   grid spacing
-% ind:  ghosted index list
+% h:   grid spacing
+% ix:  x ghosted index list
+% iz:  z ghosted index list
 
 % output variables
 % dfdt: diffusion rate of scalar field f
 
+% calculate diffusive flux coefficient at cell faces
+kfz = (k(iz(1:end-1),:)+k(iz(2:end),:))/2;
+kfx = (k(:,ix(1:end-1))+k(:,ix(2:end)))/2;
+
 % calculate diffusive flux of scalar field f
-q = - k * diff(f(ind)) / dx;
+qz = - kfz .* diff(f(iz,:),1,1)/h;
+qx = - kfx .* diff(f(:,ix),1,2)/h;
 
 % calculate diffusion flux balance for rate of change
-dfdt = - diff(q) / dx;
+dfdt = - diff(qz,1,1)/h ...
+       - diff(qx,1,2)/h;
 
 % Note: start of function defines the output dfdt
 end
@@ -271,14 +280,19 @@ end
 function Ta = analytical(f0,df,sgm0,k0,u0,w0,Xc,Zc,D,W,t)
 
 sgmt = sqrt(sgm0^2 + 2*k0*t);
-Ta   = T0 + dT*(sgm0/sgmt)*exp(-(xc -(W/2)    - u0*t).^2 ./ (4*sgmt^2)) ...
-          + dT*(sgm0/sgmt)*exp(-(xc -(W/2 + W)- u0*t).^2 ./ (2*sgmt^2)) ...
-          + dT*(sgm0/sgmt)*exp(-(xc -(W/2 - W)- u0*t).^2 ./ (2*sgmt^2));
+Ta   = f0 + dT*(sgm0/sgmt)*exp(-(xc -(W/2)    - u0*t).^2 ./ (4*sgmt^2)) ...
+          + dT*(sgm0/sgmt)*exp(-(xc -(W/2 + W)- u0*t).^2 ./ (4*sgmt^2)) ...
+          + dT*(sgm0/sgmt)*exp(-(xc -(W/2 - W)- u0*t).^2 ./ (4*sgmt^2));
 
 
-          + dT*(sgm0/sgmt)*exp(-(Zc -(W/2)    - w0*t).^2 ./ (2*sgmt^2)) ...
-          + dT*(sgm0/sgmt)*exp(-(Zc -(W/2 + W)- w0*t).^2 ./ (2*sgmt^2)) ...
-          + dT*(sgm0/sgmt)*exp(-(Zc -(W/2 - W)- w0*t).^2 ./ (2*sgmt^2))
+          + dT*(sgm0/sgmt)*exp(-(Zc -(W/2)    - w0*t).^2 ./ (4*sgmt^2)) ...
+          + dT*(sgm0/sgmt)*exp(-(Zc -(W/2 + W)- w0*t).^2 ./ (4*sgmt^2)) ...
+          + dT*(sgm0/sgmt)*exp(-(Zc -(W/2 - W)- w0*t).^2 ./ (4*sgmt^2))
 
-
+end
 %test
+
+
+% get analytical function to work
+
+% 

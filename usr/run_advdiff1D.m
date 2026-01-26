@@ -5,7 +5,7 @@ clear; close all;
 
 % set model parameters
 W     = 1000;          % domain width [m]
-N     = 400;           % grid size
+N     = 10;           % grid size
 dx    = W/N;           % grid spacing
 
 T0    = 100;           % initial background temperature [C]

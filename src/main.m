@@ -42,8 +42,8 @@ w = w0 .* ones(Nz+1,Nx);
 u = u0 .* ones(Nz,Nx+1);
 
 % set time step size
-dt_adv = (h/2)   / max(max(u(:)),max(max(w(:)))+eps); 
-dt_dff = (h/2)^2 / max(kT(:)./rho./cP);
+dt_adv = (h/2)   / max(max(u(:)),max(max(w(:))) + eps); 
+dt_dff = (h/2)^2 / max(kT(:)./rho./cP(:)+eps);
 dt     = CFL * min(dt_adv,dt_dff); % time step [s]
 
 % set initial temperature field

@@ -3,9 +3,12 @@
 
 %*****  Initialise Model Setup
 
-% create x-coordinate vectors
-xc = dx/2:dx:W-dx/2;    % coordinate vector for cell centre positions [m]
-xf = 0:dx:W;            % coordinate vectore for cell face positions [m]
+% create coordinate vectors
+xc = h/2:h:W-h/2;          % x-coordinate vector for cell centre positions [m]
+zc = h/2:h:D-h/2;          % z-coordinate vector for cell centre positions [m]
+xf = 0:h:W ;               % x-coordinate vector for cell face positions [m]
+zf = 0:h:D ;               % z-coordinate vector for cell face positions [m]
+[Xc,Zc] = meshgrid(xc,zc); % create 2D coordinate arrays
 
 % set time step size
 dt_adv = (dx/2)   / u0;
@@ -15,16 +18,35 @@ dt     = CFL * min(dt_adv,dt_dff); % time step [s]
 % set up ghosted index lists for boundary conditions
 switch BC
     case 'periodic'
-        ind3 = [     N, 1:N, 1   ];  % 3-point stencil            |-- i-1 --|-- i --|-- i+1 --|
-        ind5 = [N-1, N, 1:N, 1 ,2];  % 5-point stencil  |-- i-2 --|-- i-1 --|-- i --|-- i+1 --|-- i+2 --|
+        % 3-point stencil            |-- i-1 --|-- i --|-- i+1 --|
+        % 5-point stencil  |-- i-2 --|-- i-1 --|-- i --|-- i+1 --|-- i+2 --|
+        ix3 = [      Nx, 1:Nx, 1   ];
+        ix5 = [Nx-1, Nx, 1:Nx, 1, 2];
+        iz3 = [      Nz, 1:Nz, 1   ];
+        iz5 = [Nz-1, Nz, 1:Nz, 1, 2]; 
     case 'insulating'
         % example non-periodic indexing for N=4 
-        ind3 = [     1, 1:N, N   ];  % 3-point stencil            |-- i-1 --|-- i --|-- i+1 --|
-        ind5 = [1,   1, 1:N, N, N];  % 5-point stencil  |-- i-2 --|-- i-1 --|-- i --|-- i+1 --|-- i+2 --|
+        % 3-point stencil            |-- i-1 --|-- i --|-- i+1 --|
+        % 5-point stencil  |-- i-2 --|-- i-1 --|-- i --|-- i+1 --|-- i+2 --|
+        ix3 = [     1, 1:Nx, Nx   ]; 
+        ix5 = [1,   1, 1:Nx, Nx, Nx];  
+        iz3 = [     1, 1:Nz, Nz   ]; 
+        iz5 = [1,   1, 1:Nz, Nz, Nz];
 end
 
-% set initial condition for temperature at cell centres
-T   = T0 + dT*exp(-(xc-W/2).^2./(2*sgm0^2));      % initialise T array at Tr
+% set initial coefficient fields
+kT = kT0 .* ones(Nz,Nx);
+cP = cP0 .* ones(Nz,Nx);
+rho = rho0 .* ones(Nz,Nx);
+Qr = Qr0 .* ones(Nz,Nx);
+
+% set initial velocity field
+w = w0 .* ones(Nz+1,Nx);
+u = u0 .* ones(Nz,Nx+1);
+
+% set initial temperature field
+T = analytical(T0,dT,sgm0,kT0./rho0./cP0,u0,w0,Xc,Zc,D,W,t);   % analytical solution in 2D
+T   = T0 + dT*exp(-(xc-W/2).^2./(2*sgm0^2));      
 Tin = T;                                          % store initial condition for plotting
 Ta  = T;                                          % initialise analytical solution
 
@@ -245,6 +267,18 @@ dfdt      = - div_q;                   % advection rate
 
 end
 
+%****function to calculate the analytical temperature at time t
+function Ta = analytical(f0,df,sgm0,k0,u0,w0,Xc,Zc,D,W,t)
+
+sgmt = sqrt(sgm0^2 + 2*k0*t);
+Ta   = T0 + dT*(sgm0/sgmt)*exp(-(xc -(W/2)    - u0*t).^2 ./ (4*sgmt^2)) ...
+          + dT*(sgm0/sgmt)*exp(-(xc -(W/2 + W)- u0*t).^2 ./ (2*sgmt^2)) ...
+          + dT*(sgm0/sgmt)*exp(-(xc -(W/2 - W)- u0*t).^2 ./ (2*sgmt^2));
+
+
+          + dT*(sgm0/sgmt)*exp(-(Zc -(W/2)    - w0*t).^2 ./ (2*sgmt^2)) ...
+          + dT*(sgm0/sgmt)*exp(-(Zc -(W/2 + W)- w0*t).^2 ./ (2*sgmt^2)) ...
+          + dT*(sgm0/sgmt)*exp(-(Zc -(W/2 - W)- w0*t).^2 ./ (2*sgmt^2))
 
 
 %test

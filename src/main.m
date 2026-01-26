@@ -169,7 +169,7 @@ drawnow;
 
 end
 
-
+%**************************************************************************
 %*****  Function to calculate diffusion rate
 
 function dfdt = diffusion(f,k,h,ix,iz)
@@ -199,7 +199,7 @@ dfdt = - diff(qz,1,1)/h ...
 % Note: start of function defines the output dfdt
 end
 
-
+%**************************************************************************
 %*****  Function to calculate advection rate
 
 function dfdt = advection(f,u,w,h,ix,iz,ADVN)
@@ -281,21 +281,62 @@ dfdt  = - div_q;            % advection rate
 
 
 
-%****** horizontal advection (x direction)
+%****** vertical advection (z direction)
 
 
 % split the velocities into positive and negative
-w_pos = max(0,w);    % positive velocity (to the right)
-w_neg = min(0,w);    % negative velocity (to the left)
+w_pos = max(0,w);    % positive velocity ('up' direction)
+w_neg = min(0,w);    % negative velocity ('down' direction)
 
+f_jpp = f(iz(5:end  ),:);   % j + 2
+f_jp  = f(iz(4:end-1),:);   % j + 1
+f_jc  = f(iz(3:end-2),:);   % j
+f_jm  = f(iz(2:end-3),:);   % j - 1
+f_jmm = f(iz(1:end-4),:);   % j - 2
 
-f_jmm = f(iz(1:end-4),:);   % i - 2
-f_jm  = f(iz(2:end-3),:);   % i - 1
-f_jc  = f(iz(3:end-2),:);   % i
-f_jp  = f(iz(4:end-1),:);   % i + 1
-f_jpp = f(iz(5:end  ),:);   % i + 2
+switch ADVN
+    case 'UPW1'   % 1st-order upwind scheme
+        % positive velocity          boundary inherited from below
+        f_jp_pos = f_jc;     % j+1/2 face above center i
+        f_jm_pos = f_jm;     % j-1/2 value of left face look at left node i-1
+        
+        % negative velocity          boundary inherited from above
+        f_jp_neg = f_jp;     % j+1/2
+        f_jm_neg = f_jc;     % j-1/2 
 
+    case 'CFD2'  % 2nd-order centred finite-difference scheme
+        % positive velocity
+        f_jp_pos = (f_jc+f_ip)./2;     % j+1/2
+        f_jm_pos = (f_jc+f_im)./2;     % j-1/2
 
+        % negative velocity
+        f_jp_neg = f_jp_pos;           % j+1/2
+        f_jm_neg = f_jm_pos;           % j-1/2
+
+    case 'UPW3'  % 3rd-order upwind scheme
+        % positive velocity
+        f_jp_pos = (2*f_jp + 5*f_jc - f_jm )./6;     % j+1/2                Note: f_ip_pos - f_im_pos later to get the 3rd order upwind scheme in slides
+        f_jm_pos = (2*f_jc + 5*f_jm - f_jmm)./6;     % j-1/2     
+
+        % negative velocity
+        f_jp_neg = (2*f_jc + 5*f_jp - f_jpp)./6;     % j+1/2
+        f_jm_neg = (2*f_jm + 5*f_jc - f_jp )./6;     % j-1/2
+
+% positive velocity
+q_jp_pos = w_pos .* f_jp_pos;      % flux on top    face j+1/2
+q_jm_pos = w_pos .* f_jm_pos;      % flux on bottom face j-1/2
+
+% negative velocity
+q_jp_neg = w_neg .* f_jp_neg;      % flux on top    face j+1/2
+q_jm_neg = w_neg .* f_jm_neg;      % flux on bottom face j-1/2
+
+% advection flux balance for rate of change (z-direction)
+div_qz_pos = (q_jp_pos - q_jm_pos)/h;   % positive velocity
+div_qz_neg = (q_jp_neg - q_jm_neg)/h;   % negative velocity
+
+div_q = div_qx + div_qz     % xflux + z flux
+dfdt  = - div_q;            % advection rate
+end
 
 
 end

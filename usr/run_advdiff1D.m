@@ -60,7 +60,3 @@ run('../src/main.m');
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 
-% Errors to fix - the analytical solution dotted plot is not moving to the
-% right with advection. It does however diffuse when adding a diffusion
-% term. 
-

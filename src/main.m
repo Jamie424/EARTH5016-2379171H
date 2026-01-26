@@ -47,43 +47,19 @@ dt_dff = (h/2)^2 / max(kT(:)./rho(:)./cP(:)+eps);
 CFL = 0.5;                                               
 dt     = CFL * min(dt_adv,dt_dff); % time step [s]
 
-% set initial temperature field
-T = analytical(T0,dT,sgm0,kT0./rho0./cP0,u0,w0,Xc,Zc,D,W,t);   % analytical solution in 2D
-%T   = T0 + dT*exp(-(xc-W/2).^2./(2*sgm0^2));      
-Tin = T;                                          % store initial condition for plotting
-Ta  = T;                                          % initialise analytical solution
-
 % Initialise time count variables
 t = 0;  % initial time [s]
 k = 0;  % initial time step count
 
+% set initial temperature field
+T = analytical(T0,dT,sgm0,kT0./rho0./cP0,u0,w0,Xc,Zc,D,W,t);   % analytical solution in 2D     
+Tin = T;                                          % store initial condition for plotting
+Ta  = T;                                          % initialise analytical solution
+
+
 % initialise output figure with initial condition
 figure(1); clf
-makefig(xc,T,Tin,Ta,0);
-
-
-%********** Implicit scheme setup
-
-% set temporal coefficient matrix
-At = speye(N,N) * 1/dt; % N x N sparse diagonal matrix with 1/dt on diagonal
-
-% use mapping array to add indices to index lists for spatial coefficients 
-i = []; j = []; % initialise i,j as empty lists 
-i = [i, ind3(2:end-1)]; j = [j, ind3(2:end-1)]; % centre stencil node i 
-i = [i, ind3(2:end-1)]; j = [j, ind3(1:end-2)]; % left stencil node i-1 
-i = [i, ind3(2:end-1)]; j = [j, ind3(3:end  )]; % right stencil node i+1 
-
-% add coefficient values to value list 
-a = []; % initialise a as empty list 
-a = [a,  ( +2*k0/dx^2)        * ones(1,N)];       % centre stencil node i 
-a = [a, -(u0/(2*dx)- k0/dx^2) * ones(1,N)];       % left stencil node i-1
-a = [a,  (u0/(2*dx)- k0/dx^2) * ones(1,N)];       % right stencil node i+1
-
-disp([numel(i), numel(j), numel(a)])  % length of i,j and a must be equal to pair the three together in Ax
-
-Ax = sparse(i,j,a,N,N);   % place values a at positions (i,j) in NxN matrix
-A_BE = At + Ax;           % coefficient matrix for BE1 scheme
-A_CN = At + Ax/2;         % coefficient matrix for CN2 scheme
+makefig(xc,zc,T,Tin,Ta,0);
 
 %*****  Solve Model Equations
 while t <= tend
@@ -91,44 +67,29 @@ while t <= tend
     % increment time and step count
     t = t+dt;
     k = k+1;
-    
-    
-    switch SCHEME
-        case 'explicit' 
-            switch TINT % select time integration scheme
-                case 'FE1'  % 1st-order Forward Euler time integration scheme
-                    % get rate of change
-                    dTdt = ((diffusion(T,k,h,ix,iz3) + Qr0)./(rho0*cp0))  ...
-                           - advection(T,u0,w0,h,iz5,ADVN);
-        
-                case 'RK2'  % 2nd-order Runge-Kutta time integration scheme
-                    dTdt_half = diffusion(T               ,k,h,ix,iz) + Qr0 ./(rho0*cp0) ...
-                              + advection(T,u0,dx,ind5,ADVN);
-                    dTdt      = diffusion(T+dTdt_half*dt/2,k0,dx,iz3) ...
-                              + advection(T+dTdt_half*dt/2,u0,dx,iz5,ADVN);
-            end
-            % update temperature
-            T = T + dTdt * dt;
+   
+    switch TINT % select time integration scheme
+        case 'FE1'  % 1st-order Forward Euler time integration scheme
+            % get rate of change
+            dTdt = ((diffusion(T,k,h,ix,iz3) + Qr0)./(rho0*cp0))  ...
+                   - advection(T,u0,w0,h,iz5,ADVN);
 
-        case 'implicit'
-            switch TINT % select time integration scheme
-                case 'BE1' % implicit: 1st-order Backward Euler (BE1) 
-                    b = At*T.';            % prepare forcing vector 
-                    T = (A_BE \ b).';      % solve linear system of equations
+        case 'RK2'  % 2nd-order Runge-Kutta time integration scheme
+            dTdt_half = diffusion(T               ,k,h,ix,iz) + Qr0 ./(rho0*cp0) ...
+                      + advection(T,u0,dx,ind5,ADVN);
+            dTdt      = diffusion(T+dTdt_half*dt/2,k0,dx,iz3) ...
+                      + advection(T+dTdt_half*dt/2,u0,dx,iz5,ADVN);
+        end
 
-                case 'CN2' % Semi-implicit: 2nd-order Crank-Nicolson (CN2) 
-                    b = At*T.'- Ax*T.'/2;   % get forcing vector
-                    T = (A_CN \ b).';       % solve linear system of equations 
-            end    
-    end
-
+    % update temperature
+    T = T + dTdt * dt;    
 
     % get analytical solution at time t
     analytical(T0,df,sgm0,k0,u0,w0,Xc,Zc,D,W,t)
 
     % plot model progress
     if ~mod(k,nop)
-        makefig(xc,T,Tin,Ta,t/yr);
+        makefig(xc,zc,T,Tin,Ta,t/yr);
         pause(0.1);
     end
 
@@ -150,20 +111,17 @@ end
 
 %*****  Function to make output figure
 
-function makefig(x,T,Tin,Ta,t)
+function makefig(x,z,T,Tin,Ta,t)
 
-subplot(2,1,1)
-plot(x,Tin,'k:',x,T,'r-',x,Ta,'k--','LineWidth',1.5); axis tight; box on;
-
-ylabel('T [C]','FontSize',15)
-title(['Temperature at time = ',num2str(t,4),' yr'],'FontSize',18)
-
+subplot(2,1,1);
+imagesc(x,z,T); axis equal tight; colorbar
+ylabel('z [m]','FontSize',15)
+title(['Temperature [C]; time = ',num2str(t),' [yr]'],'FontSize',17)
 subplot(2,1,2)
-plot(x,(T-Ta)./rms(Ta,'all'),'r-',x,0*Ta,'k-','LineWidth',1.5); axis tight; box on;
-
+imagesc(x,z,(T-Ta) / rms(Ta,'all')); axis equal tight; colorbar
 xlabel('x [m]','FontSize',15)
-ylabel('E [1]','FontSize',15)
-title(['Numerical Error at time = ',num2str(t,4),' yr'],'FontSize',18)
+ylabel('z [m]','FontSize',15)
+title('Normalized Num. Error [C]','FontSize',17)
 
 drawnow;
 
@@ -276,10 +234,6 @@ div_qx_neg = (q_ip_neg - q_im_neg)/h;  % negative velocity
 
 div_qx     = div_q_pos + div_q_neg;     % combined flux x direction
 
-div_q = div_qx + div_qz     % xflux + z flux
-dfdt  = - div_q;            % advection rate
-
-
 
 %****** vertical advection (z direction)
 
@@ -334,7 +288,10 @@ q_jm_neg = w_neg .* f_jm_neg;      % flux on bottom face j-1/2
 div_qz_pos = (q_jp_pos - q_jm_pos)/h;   % positive velocity
 div_qz_neg = (q_jp_neg - q_jm_neg)/h;   % negative velocity
 
-div_q = div_qx + div_qz     % xflux + z flux
+div_qz     = div_qz_pos + div_qz_neg;   % combined flux x direction
+
+
+div_q = div_qx + div_qz;                % xflux + z flux
 dfdt  = - div_q;            % advection rate
 end
 
@@ -346,15 +303,15 @@ function Ta = analytical(f0,df,sgm0,k0,u0,w0,Xc,Zc,D,W,t)
 
 sgmt = sqrt(sgm0^2 + 2*k0*t);
 % sum each of the 9 combinations
-Ta   = f0 + dT*(sgm0/sgmt)*(exp(-(Xc-(W/2    )- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (2*sgmt^2)) ...
-                          + exp(-(Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (2*sgmt^2)) ...
-                          + exp(-(Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (2*sgmt^2)) ...
-                          + exp(-(Xc-(W/2    )- w0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (2*sgmt^2)) ...
-                          + exp(-(Xc-(W/2    )- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (2*sgmt^2)) ...
-                          + exp(-(Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (2*sgmt^2)) ...
-                          + exp(-(Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (2*sgmt^2)) ...
-                          + exp(-(Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (2*sgmt^2))...
-                          + exp(-(Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (2*sgmt^2)))
+Ta   = f0 + df*(sgm0/sgmt)*(exp(-((Xc-(W/2    )- u0*t).^2 + (Zc-(D/2   ) - w0*t).^2)./ (2*sgmt^2)) ...
+                          + exp(-((Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (2*sgmt^2)) ...
+                          + exp(-((Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (2*sgmt^2)) ...
+                          + exp(-((Xc-(W/2    )- w0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (2*sgmt^2)) ...
+                          + exp(-((Xc-(W/2    )- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (2*sgmt^2)) ...
+                          + exp(-((Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (2*sgmt^2)) ...
+                          + exp(-((Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (2*sgmt^2)) ...
+                          + exp(-((Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (2*sgmt^2)) ...
+                          + exp(-((Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (2*sgmt^2)));
 
 end
 %test

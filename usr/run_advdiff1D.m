@@ -17,6 +17,7 @@ Qr0   = 1e-6;          % heat productivity [W/m3]
 u0    = 1e-6;          % advection x-speed [m/s]
 w0    = 1e-6;          % advection z-speed [m/s]
 
+
 T0    = 100;           % initial background temperature [C]
 dT    = 1000;          % initial temperature peak amplitude [C]
 sgm0  = 25;            % initial temperature peak half-width (std dev.) [m]

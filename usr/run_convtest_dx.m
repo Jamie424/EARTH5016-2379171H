@@ -8,32 +8,41 @@ NN = [200,400,800];
 for nn = 1:3
 
 % set model parameters
-W     = 1000;          % domain width [m]
-N     = NN(nn);        % grid size
-dx    = W/N;           % grid spacing
+W     = 1e3;           % domain width [m]
+D     = 1e3;           % domain depth [m]
+Nz    = 100;           % grid size z-direction
+Nx    = Nz*W/D;        % grid size x-direction
+h     = D/Nz;           % grid spacing (h = dx = dz)
+
+kT0   = 2;             % thermal conductivity [W/m/K]
+rho0  = 2700;          % density [kg/m3]
+cP0   = 1100;          % heat capacity [J/kg/K]
+Qr0   = 1e-6;          % heat productivity [W/m3]
+u0    = 1e-6;          % advection x-speed [m/s]
+w0    = 1e-6;          % advection z-speed [m/s]
+
 
 T0    = 100;           % initial background temperature [C]
 dT    = 1000;          % initial temperature peak amplitude [C]
 sgm0  = 25;            % initial temperature peak half-width (std dev.) [m]
 
-k0    = 0e-6;          % heat diffusivity [m2/s]
-u0    = 1e-6;          % advection speed [m/s]
+k0    = kT0/(rho0*cP0);% heat diffusivity[m2/s]
 
 BC    = 'periodic';    % boundary condition option flag ('insulating', 'periodic')
 ADVN  = 'UPW3';        % advection scheme ('UPW1', 'CFD2', 'UPW3')
-TINT  = 'CN2';         % time integration scheme ('FE1', 'RK2')
-SCHEME= 'implicit';    % Explicit or implicit scheme ('explicit', 'implicit')
+TINT  = 'RK2';         % time integration scheme ('FE1', 'RK2')
+SCHEME= 'explicit';    % Explicit or implicit scheme ('explicit', 'implicit')
 
 yr    = 3600*24*365;   % seconds per year [s]
 tend  = W/max(u0,k0);  % stopping time [s]
-CFL   = N/10000;        % time step limiter
+CFL   = Nx/10000;        % time step limiter
 nop   = 5000;          % make output figure every 'nop' time steps
 
 %*****  RUN MODEL
 run('../src/main.m');
 
 E(nn)  = Err;
-DX(nn) = dx;
+DX(nn) = h;
 
 end
 

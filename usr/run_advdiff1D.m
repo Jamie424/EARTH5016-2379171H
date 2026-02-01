@@ -23,7 +23,6 @@ dT    = 1000;          % initial temperature peak amplitude [C]
 sgm0  = 25;            % initial temperature peak half-width (std dev.) [m]
 
 k0    = kT0/(rho0*cP0);% heat diffusivity[m2/s]
-u0    = 1e-6;          % advection speed [m/s]
 
 BC    = 'periodic';    % boundary condition option flag ('insulating', 'periodic')
 ADVN  = 'UPW3';        % advection scheme ('UPW1', 'CFD2', 'UPW3')

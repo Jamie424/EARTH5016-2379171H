@@ -68,14 +68,14 @@ while t <= tend
         case 'FE1'  % 1st-order Forward Euler time integration scheme
             % get rate of change
             dTdt = diffusion(T,kT,h,ix3,iz3)./(rho.*cP)  ...
-                   + advection(T,u,w,h,ix5,iz5,ADVN) + Qr./(rho.*cP);
+                   - advection(T,u,w,h,ix5,iz5,ADVN) + Qr./(rho.*cP);
                   
 
         case 'RK2'  % 2nd-order Runge-Kutta time integration scheme
             dTdt_half = diffusion(T               ,kT,h,ix3,iz3)./(rho.*cP) ...
-                      + advection(T               ,u,w,h,ix5,iz5,ADVN);
+                      - advection(T               ,u,w,h,ix5,iz5,ADVN);
             dTdt      = diffusion(T+dTdt_half*dt/2,kT, h,ix3,iz3)./(rho.*cP) ...
-                      + advection(T+dTdt_half*dt/2,u,w,h,ix5,iz5,ADVN) + Qr./(rho.*cP);
+                      - advection(T+dTdt_half*dt/2,u,w,h,ix5,iz5,ADVN) + Qr./(rho.*cP);
                       
     end
 

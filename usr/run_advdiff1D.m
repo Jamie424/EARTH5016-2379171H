@@ -21,12 +21,12 @@ T0    = 100;           % initial background temperature [C]
 dT    = 1000;          % initial temperature peak amplitude [C]
 sgm0  = 25;            % initial temperature peak half-width (std dev.) [m]
 
-k0    = 0e-6;          % heat diffusivity[m2/s]
+k0    = kT0/(rho0*cP0);% heat diffusivity[m2/s]
 u0    = 1e-6;          % advection speed [m/s]
 
 BC    = 'periodic';    % boundary condition option flag ('insulating', 'periodic')
 ADVN  = 'UPW3';        % advection scheme ('UPW1', 'CFD2', 'UPW3')
-TINT  = 'RK2';         % time integration scheme (Explicit:'FE1', 'RK2') (Implicit:'BE1', 'CN2')
+TINT  = 'FE1';         % time integration scheme (Explicit:'FE1', 'RK2') (Implicit:'BE1', 'CN2')
 SCHEME= 'explicit';    % Implicit or explicit scheme ('explicit', 'implicit')
 
 yr    = 3600*24*365;   % seconds per year [s]

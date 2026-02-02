@@ -42,25 +42,34 @@ cP     = cP0     .* ones(Nz,Nx);         % heat capacity [J/kg/K]
 rho    = rho0    .* ones(Nz,Nx);         % density [kg/m3]
 Qr     = Qr0     .* ones(Nz,Nx);         % heat production [W/m3]
 
-% set initial velocity field
-u = u0 .* ones(Nz,Nx+1);          % advection x-speed [m/s]
-w = w0 .* ones(Nz+1,Nx);          % advection z-speed [m/s]
+% pressure field
+p = zeros(Nz,Nx); 
+
+% KD Darcy mobility field
+KD = KD0 .* ones(Nz,Nx);
+
+
+% Initial Darcy flux
+u = zeros(Nz,Nx+1);          % x-face flux  
+w = zeros(Nz+1,Nx);          % z-face flux
+
+
 
 % set time step size (Courant–Friedrichs–Lewy condition)
 dt_adv = (h/2)   / (max(abs(u(:))) + max(abs(w(:))) + eps); 
 dt_dff = (h/2)^2 / max(kT(:)./rho(:)./cP(:) + eps);                                              
-dt     = CFL * min(dt_adv,dt_dff); % time step [s]
+dt     = CFL * min(dt_adv,dt_dff);               % time step [s]
 
 % Initialise time count variables
 t = 0;  % initial time [s]
 k = 0;  % initial time step count
 
-% set initial temperature field
+% set initial temperature field (linear gradient from Tbot to Ttop)
 T = Ttop + (zc(:)/D) * (Tbot - Ttop) .* ones(1,Nx);
-
 T(1,:)   = Ttop;
 T(end,:) = Tbot;
 Tin = T;
+Ta = Tin;    % dummy for now
 
 
 % initialise output figure with initial condition
@@ -76,6 +85,12 @@ while t <= tend
 
     % Temperature dependant density
     rho = rho0 .* (1 - alphaT.*(T - Tref));
+
+    [u,w] = darcy_flux(p, rho, KD, h, g, ix3, iz3)
+
+    % Closed top/bottom boundaries (no flow through vertical boundaries)
+    w(1,:)   = 0;
+    w(end,:) = 0;
     
    
     switch TINT % select explicit time integration scheme
@@ -97,7 +112,11 @@ while t <= tend
     end
 
     % update temperature
-    T = T + dTdt * dt;    
+    T = T + dTdt * dt;  
+
+    % update boundary conditions for temperature
+    T(1,:)   = Ttop;
+    T(end,:) = Tbot;
 
     % get analytical solution at time t
     Ta = analytical(T0,dT,sgm0,k0,u0,w0,Xc,Zc,D,W,t);
@@ -112,7 +131,7 @@ while t <= tend
 end
 
 %*****  calculate and display numerical error norm
-Err = rms(T - Ta, 'all') / rms(Ta, 'all');
+%Err = rms(T - Ta, 'all') / rms(Ta, 'all');
 
 disp(' ');
 disp(['Advection scheme: ',ADVN]);
@@ -311,9 +330,68 @@ dfdt  = - div_q;            % advection rate
 end
 
 
+% Function for Darcy flux (copilot help)
+function [u,w] = darcy_flux(p, rho, KD, h, g, ix3, iz3)
+
+% Computes Darcy flux components vD = [u,w]
+
+% Darcy law used:
+%   u = -KD * dp/dx
+%   w = -KD * (dp/dz - rho*g)
+
+% INPUTS:
+%   p   : (Nz x Nx) pressure [Pa] (cell centres)
+%   rho : (Nz x Nx) density  [kg/m^3] (cell centres)
+%   KD  : (Nz x Nx) mobility [m^2/(Pa*s)] (cell centres)
+%   h   : grid spacing [m]
+%   g   : gravity [m/s^2] (positive, acts downward)
+%   ix3 : ghosted x-index list length Nx+2 (periodic)
+%   iz3 : ghosted z-index list length Nz+2 (choose for BC)
+
+% OUTPUTS:
+%   u : (Nz x (Nx+1)) x-face Darcy flux [m/s]
+%   w : ((Nz+1) x Nx) z-face Darcy flux [m/s]
+
+    % x-faces: u(i, i+1/2)
+    pL = p(:, ix3(1:end-1));     % Nz x (Nx+1)
+    pR = p(:, ix3(2:end  ));     % Nz x (Nx+1)
+
+    dpdx = (pR - pL) / h;        % Nz x (Nx+1)
+
+    % face mobility: average KD from adjacent cells
+    KDx = 0.5 * (KD(:, ix3(1:end-1)) + KD(:, ix3(2:end)));
+
+    % Darcy flux in x
+    u = -KDx .* dpdx;
+
+    % ----------------------------
+    % z-faces: w(j+1/2, i)
+    % ----------------------------
+    % bottom and top cell pressures around each z-face
+    pB = p(iz3(1:end-1), :);     % (Nz+1) x Nx
+    pT = p(iz3(2:end  ), :);     % (Nz+1) x Nx
+
+    dpdz = (pT - pB) / h;        % (Nz+1) x Nx
+
+    % face mobility and density: average from adjacent cells
+    KDz  = 0.5 * (KD(iz3(1:end-1), :)  + KD(iz3(2:end), :));
+    rhoz = 0.5 * (rho(iz3(1:end-1), :) + rho(iz3(2:end), :));
+
+    % Darcy flux in z (includes buoyancy)
+    w = -KDz .* (dpdz - rhoz * g);
+end
+
+function F = darcy_residual(u,w,h)
+% u: Nz x (Nx+1)
+% w: (Nz+1) x Nx
+% F: Nz x Nx (divergence at cell centres)
+    F = diff(w)/h + diff(u)/h;
+end
 
 
-%****function to calculate the analytical temperature at time t
+% function below not used for Darcy flux version - no known analytical solution
+
+%****function to calculate the analytical temperature at time t 
 function Ta = analytical(f0,df,sgm0,k0,u0,w0,Xc,Zc,D,W,t)
 
 sgmt = sqrt(sgm0^2 + 2*k0*t);
@@ -331,13 +409,3 @@ Ta   = f0 + df*(sgm0.^2/sgmt.^2)*(exp(-((Xc-(W/2    )- u0*t).^2 + (Zc-(D/2    ) 
 
 end
 
-
-%****function for Darcy flux
-
-%function vD = Darcy(kD, P, rho, g)
-
-
-
-
-%end
-% 

@@ -1,4 +1,4 @@
-%*****  RUN 1D ADVECTION DIFFUSION MODEL  *********************************
+%*****  RUN 2D ADVECTION DIFFUSION MODEL  *********************************
 
 % clear workspace
 clear; close all;
@@ -19,11 +19,12 @@ u0    = 1e-6;          % advection x-speed [m/s]
 w0    = 1e-6;          % advection z-speed [m/s]
 
 % darcy flow parameters
-g    = 9.81;        % gravity [m/s^2]
-KD0  = 1e-7;        % Darcy mobility [m^2/(Pa*s)]  (you will sweep this)
-Ttop = 0;           % top temperature [C]
-Tbot = 1000;        % bottom temperature [C]
-Tref = Ttop;        % reference temperature for density law (could be T0 or Ttop)
+g       = 9.81;        % gravity [m/s^2]
+alphaT0 = 1e-6;        % thermal expansivity  [1/K]
+KD0     = 1e-7;        % Darcy mobility [m^2/(Pa*s)]
+Ttop    = 0;           % top temperature [C]
+Tbot    = 1000;        % bottom temperature [C]
+Tref    = Ttop;        % reference temperature for density law
 
 T0    = 100;           % initial background temperature [C]
 

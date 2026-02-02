@@ -96,8 +96,12 @@ while t <= tend
     end
 
     % update temperature
-    T = T + dTdt * dt;    
+    T = T + dTdt * dt;  
 
+    % update boundary conditions for temperature
+    T(1,:)   = Ttop;
+    T(end,:) = Tbot;
+    
     % get analytical solution at time t
     Ta = analytical(T0,dT,sgm0,k0,u0,w0,Xc,Zc,D,W,t);
 

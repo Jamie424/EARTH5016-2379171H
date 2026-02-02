@@ -1,4 +1,4 @@
-%*****  1D ADVECTION DIFFUSION MODEL OF HEAT TRANSPORT  *******************
+%*****  2D ADVECTION DIFFUSION MODEL OF HEAT TRANSPORT  *******************
 
 
 %*****  Initialise Model Setup
@@ -26,6 +26,7 @@ switch BC
         % 5-point stencil  |-- i-2 --|-- i-1 --|-- i --|-- i+1 --|-- i+2 --|
         ix3 = [   1, 1:Nx, Nx    ];    iz3 = [   1, 1:Nz, Nz    ];
         ix5 = [1, 1, 1:Nx, Nx, Nx];    iz5 = [1, 1, 1:Nz, Nz, Nz]; 
+
     case 'X_PerZ_Iso'
         % Isothermal at top/bottom, periodic horizontally
         ix3 = [      Nx, 1:Nx, 1   ];    iz3 = [   1, 1:Nz, Nz    ];
@@ -39,7 +40,7 @@ kT     = kT0     .* ones(Nz,Nx);         % matrix of initial thermal conductivit
 alphaT = alphaT0 .* ones(Nz,Nx);         % matrix of initial thermal expansivity  [W/m/K]
 cP     = cP0     .* ones(Nz,Nx);         % heat capacity [J/kg/K]
 rho    = rho0    .* ones(Nz,Nx);         % density [kg/m3]
-Qr     = Qr0     .* ones(Nz,Nx);         % heat productivity [W/m3]
+Qr     = Qr0     .* ones(Nz,Nx);         % heat production [W/m3]
 
 % set initial velocity field
 u = u0 .* ones(Nz,Nx+1);          % advection x-speed [m/s]
@@ -72,10 +73,8 @@ while t <= tend
     k = k + 1;
 
     % Temperature dependant density
-    rho = rho0 .* (1 - alphaT.*(T - T0));
-
-    v = -
-
+    rho = rho0 .* (1 - alphaT.*(T - Tref));
+    
    
     switch TINT % select explicit time integration scheme
         case 'FE1'  % 1st-order Forward Euler time integration scheme
@@ -87,7 +86,8 @@ while t <= tend
 
         case 'RK2'  % 2nd-order Runge-Kutta time integration scheme
             dTdt_half = diffusion(T                ,kT,h,ix3,iz3)./(rho.*cP) ...
-                      + advection(T               ,u,w,h,ix5,iz5,ADVN);
+                      + advection(T               ,u,w,h,ix5,iz5,ADVN) ...
+                      + Qr./(rho.*cP);
             dTdt      = diffusion(T+dTdt_half*dt/2,kT, h,ix3,iz3)./(rho.*cP) ...
                       + advection(T+dTdt_half*dt/2,u,w,h,ix5,iz5,ADVN) ...
                       + Qr./(rho.*cP);
@@ -107,7 +107,7 @@ while t <= tend
     end
 
 
-
+end
 
 %*****  calculate and display numerical error norm
 Err = rms(T - Ta, 'all') / rms(Ta, 'all');
@@ -115,10 +115,10 @@ Err = rms(T - Ta, 'all') / rms(Ta, 'all');
 disp(' ');
 disp(['Advection scheme: ',ADVN]);
 disp(['Time integration scheme: ',TINT]);
-disp(['Numerical error = ',num2str(Err)]);
+disp(['Numerical error norm = ',num2str(Err)]);
 disp(' ');
 
-end
+
 
 %*****  Utility Functions  ************************************************
 
@@ -304,9 +304,6 @@ div_qz_neg = (q_jp_neg - q_jm_neg)/h;   % negative velocity
 
 div_qz     = div_qz_pos + div_qz_neg;   % combined flux x direction
 
-
-
-
 div_q = div_qx + div_qz;                % x flux + z flux
 dfdt  = - div_q;            % advection rate
 end
@@ -335,10 +332,10 @@ end
 
 %****function for Darcy flux
 
-function vD = Darcy(kD, P, rho, g)
+%function vD = Darcy(kD, P, rho, g)
 
 
 
 
-end
+%end
 % 

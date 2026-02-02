@@ -56,9 +56,10 @@ t = 0;  % initial time [s]
 k = 0;  % initial time step count
 
 % set initial temperature field
-T = analytical(T0,dT,sgm0,kT0./rho0./cP0,u0,w0,Xc,Zc,D,W,t);   % analytical solution in 2D     
-Tin = T;                                          % store initial condition for plotting
-Ta  = T;                                          % initialise analytical solution
+T = Ttop + (zc(:)/D) * (Tbot - Ttop) .* ones(1,Nx);
+T(1,:)   = Ttop;
+T(end,:) = Tbot;
+Tin = T;
 
 
 % initialise output figure with initial condition

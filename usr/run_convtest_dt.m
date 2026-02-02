@@ -11,11 +11,12 @@ for cc = 1:3
 % set model parameters
 W     = 1e3;           % domain width [m]
 D     = 1e3;           % domain depth [m]
-Nz    = 100;           % grid size z-direction
+Nz    = 300;           % grid size z-direction
 Nx    = Nz*W/D;        % grid size x-direction
-h     = D/Nz;           % grid spacing (h = dx = dz)
+h     = D/Nz;          % grid spacing (h = dx = dz)
 
 kT0 = 2;               % thermal conductivity [W/m/K]
+alphaT0 = 1e-6;        % thermal expansivity  [1/K]
 rho0 = 2700;           % density [kg/m3]
 cP0 = 1100;            % heat capacity [J/kg/K]
 Qr0 = 1e-6;            % heat productivity [W/m3]

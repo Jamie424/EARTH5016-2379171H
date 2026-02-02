@@ -13,12 +13,13 @@ h     = D/Nz;           % grid spacing (h = dx = dz)
 kT0   = 2;             % thermal conductivity [W/m/K]
 rho0  = 2700;          % density [kg/m3]
 cP0   = 1100;          % heat capacity [J/kg/K]
-Qr0   = 1e-6;          % heat productivity [W/m3]
+Qr0   = 0e-6;          % heat productivity [W/m3]
 u0    = 1e-6;          % advection x-speed [m/s]
 w0    = 1e-6;          % advection z-speed [m/s]
 
 
 T0    = 100;           % initial background temperature [C]
+
 dT    = 1000;          % initial temperature peak amplitude [C]
 sgm0  = 25;            % initial temperature peak half-width (std dev.) [m]
 

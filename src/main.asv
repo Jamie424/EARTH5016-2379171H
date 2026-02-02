@@ -29,10 +29,11 @@ switch BC
 end
 
 % set initial coefficient fields
-kT  = kT0  .* ones(Nz,Nx);         % matrix of initial thermal conductivity [W/m/K]
-cP  = cP0  .* ones(Nz,Nx);         % heat capacity [J/kg/K]
-rho = rho0 .* ones(Nz,Nx);         % density [kg/m3]
-Qr  = Qr0  .* ones(Nz,Nx);         % heat productivity [W/m3]
+kT     = kT0     .* ones(Nz,Nx);         % matrix of initial thermal conductivity [W/m/K]
+alphaT = alphaT0 .* ones(Nz,Nx);         % matrix of initial thermal expansivity  [W/m/K]
+cP     = cP0     .* ones(Nz,Nx);         % heat capacity [J/kg/K]
+rho    = rho0    .* ones(Nz,Nx);         % density [kg/m3]
+Qr     = Qr0     .* ones(Nz,Nx);         % heat productivity [W/m3]
 
 % set initial velocity field
 u = u0 .* ones(Nz,Nx+1);          % advection x-speed [m/s]
@@ -63,19 +64,25 @@ while t <= tend
     % increment time and step count
     t = t + dt;
     k = k + 1;
+
+    % Temperature dependant density
+    rho = rho0 .* (1 - alphaT.*(T - T0))
+
+
+
    
     switch TINT % select explicit time integration scheme
         case 'FE1'  % 1st-order Forward Euler time integration scheme
             % get rate of change
             dTdt = diffusion(T,kT,h,ix3,iz3)./(rho.*cP)  ...
-                   - advection(T,u,w,h,ix5,iz5,ADVN) + Qr./(rho.*cP);
+                 + advection(T,u,w,h,ix5,iz5,ADVN) + Qr./(rho.*cP);
                   
 
         case 'RK2'  % 2nd-order Runge-Kutta time integration scheme
-            dTdt_half = diffusion(T               ,kT,h,ix3,iz3)./(rho.*cP) ...
-                      - advection(T               ,u,w,h,ix5,iz5,ADVN);
+            dTdt_half = diffusion(T                ,kT,h,ix3,iz3)./(rho.*cP) ...
+                      + advection(T               ,u,w,h,ix5,iz5,ADVN);
             dTdt      = diffusion(T+dTdt_half*dt/2,kT, h,ix3,iz3)./(rho.*cP) ...
-                      - advection(T+dTdt_half*dt/2,u,w,h,ix5,iz5,ADVN) + Qr./(rho.*cP);
+                      + advection(T+dTdt_half*dt/2,u,w,h,ix5,iz5,ADVN) + Qr./(rho.*cP);
                       
     end
 
@@ -116,7 +123,7 @@ imagesc(x,z,T); axis equal tight; colorbar
 ylabel('z [m]','FontSize',15)
 title(['Temperature [C]; time = ',num2str(t),' [yr]'],'FontSize',17)
 subplot(2,1,2)
-imagesc(x,z,(T-Ta) / rms(Ta,'all')); axis equal tight; colorbar
+imagesc(x,z,T - Ta); axis equal tight; colorbar
 xlabel('x [m]','FontSize',15)
 ylabel('z [m]','FontSize',15)
 title('Normalized Num. Error [C]','FontSize',17)
@@ -290,7 +297,9 @@ div_qz_neg = (q_jp_neg - q_jm_neg)/h;   % negative velocity
 div_qz     = div_qz_pos + div_qz_neg;   % combined flux x direction
 
 
-div_q = div_qx + div_qz;                % xflux + z flux
+
+
+div_q = div_qx + div_qz;                % x flux + z flux
 dfdt  = - div_q;            % advection rate
 end
 
@@ -302,15 +311,15 @@ function Ta = analytical(f0,df,sgm0,k0,u0,w0,Xc,Zc,D,W,t)
 
 sgmt = sqrt(sgm0^2 + 2*k0*t);
 % sum each of the 9 combinations
-Ta   = f0 + df*(sgm0/sgmt)*(exp(-((Xc-(W/2    )- u0*t).^2 + (Zc-(D/2   ) - w0*t).^2)./ (2*sgmt^2)) ...
-                          + exp(-((Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (2*sgmt^2)) ...
-                          + exp(-((Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (2*sgmt^2)) ...
-                          + exp(-((Xc-(W/2    )- u0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (2*sgmt^2)) ...
-                          + exp(-((Xc-(W/2    )- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (2*sgmt^2)) ...
-                          + exp(-((Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (2*sgmt^2)) ...
-                          + exp(-((Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (2*sgmt^2)) ...
-                          + exp(-((Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (2*sgmt^2)) ...
-                          + exp(-((Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (2*sgmt^2)));
+Ta   = f0 + df*(sgm0.^2/sgmt.^2)*(exp(-((Xc-(W/2    )- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (2*sgmt^2)) ...
+                                + exp(-((Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (2*sgmt^2)) ...
+                                + exp(-((Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (2*sgmt^2)) ...
+                                + exp(-((Xc-(W/2    )- u0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (2*sgmt^2)) ...
+                                + exp(-((Xc-(W/2    )- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (2*sgmt^2)) ...
+                                + exp(-((Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (2*sgmt^2)) ...
+                                + exp(-((Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (2*sgmt^2)) ...
+                                + exp(-((Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (2*sgmt^2)) ...
+                                + exp(-((Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (2*sgmt^2)));
 
 end
 %test

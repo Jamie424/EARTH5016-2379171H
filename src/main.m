@@ -69,7 +69,6 @@ T = Ttop + (zc(:)/D) * (Tbot - Ttop) .* ones(1,Nx);
 T(1,:)   = Ttop;
 T(end,:) = Tbot;
 Tin = T;
-Ta = Tin;    % dummy for now
 
 
 % initialise output figure with initial condition
@@ -118,8 +117,6 @@ while t <= tend
     T(1,:)   = Ttop;
     T(end,:) = Tbot;
 
-    % get analytical solution at time t
-    Ta = analytical(T0,dT,sgm0,k0,u0,w0,Xc,Zc,D,W,t);
 
     % plot model progress
     if ~mod(k,nop)
@@ -138,6 +135,11 @@ disp(['Advection scheme: ',ADVN]);
 disp(['Time integration scheme: ',TINT]);
 disp(['Numerical error norm = ',num2str(Err)]);
 disp(' ');
+
+
+
+
+
 
 
 
@@ -330,7 +332,7 @@ dfdt  = - div_q;            % advection rate
 end
 
 
-% Function for Darcy flux (copilot help)
+% Function for Darcy flux (copilot help) **********************************
 function [u,w] = darcy_flux(p, rho, KD, h, g, ix3, iz3)
 
 % Computes Darcy flux components vD = [u,w]
@@ -383,11 +385,23 @@ function F = darcy_residual(u,w,h)
 % u: Nz x (Nx+1)
 % w: (Nz+1) x Nx
 % F: Nz x Nx (divergence at cell centres)
-    F = diff(w)/h + diff(u)/h;
+    F = diff(w,1,1)/h + diff(u,1,2)/h;
 end
 
 
+
+
+
+
+
 % function below not used for Darcy flux version - no known analytical solution
+
+
+
+% get analytical solution at time t
+%Ta = analytical(T0,dT,sgm0,k0,u0,w0,Xc,Zc,D,W,t);
+
+
 
 %****function to calculate the analytical temperature at time t 
 function Ta = analytical(f0,df,sgm0,k0,u0,w0,Xc,Zc,D,W,t)

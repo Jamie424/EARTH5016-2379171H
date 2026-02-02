@@ -48,6 +48,24 @@ nop   = 100;           % make output figure every 'nop' time steps
 run('../src/main.m');
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%
 
 % Qualitive test for performance of ADVN schemes

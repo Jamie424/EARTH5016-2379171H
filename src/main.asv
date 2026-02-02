@@ -24,9 +24,17 @@ switch BC
         % example non-periodic indexing for N=4 
         % 3-point stencil            |-- i-1 --|-- i --|-- i+1 --|
         % 5-point stencil  |-- i-2 --|-- i-1 --|-- i --|-- i+1 --|-- i+2 --|
-        ix3 = [   1, 1:Nx, Nx    ];  iz3 = [   1, 1:Nz, Nz    ];
-        ix5 = [1, 1, 1:Nx, Nx, Nx];  iz5 = [1, 1, 1:Nz, Nz, Nz]; 
+        ix3 = [   1, 1:Nx, Nx    ];    iz3 = [   1, 1:Nz, Nz    ];
+        ix5 = [1, 1, 1:Nx, Nx, Nx];    iz5 = [1, 1, 1:Nz, Nz, Nz]; 
+    case ''
+        % example non-periodic indexing for N=4 
+        % 3-point stencil            |-- i-1 --|-- i --|-- i+1 --|
+        % 5-point stencil  |-- i-2 --|-- i-1 --|-- i --|-- i+1 --|-- i+2 --|
+        ix3 = [      Nx, 1:Nx, 1   ];    iz3 = [   1, 1:Nz, Nz    ];
+        ix5 = [Nx-1, Nx, 1:Nx, 1, 2];    iz5 = [1, 1, 1:Nz, Nz, Nz]; 
 end
+
+
 
 % set initial coefficient fields
 kT     = kT0     .* ones(Nz,Nx);         % matrix of initial thermal conductivity [W/m/K]
@@ -66,7 +74,7 @@ while t <= tend
     k = k + 1;
 
     % Temperature dependant density
-    rho = rho0 .* (1 - alphaT.*(T - T0))
+    rho = rho0 .* (1 - alphaT.*(T - T0));
 
 
 
@@ -75,14 +83,16 @@ while t <= tend
         case 'FE1'  % 1st-order Forward Euler time integration scheme
             % get rate of change
             dTdt = diffusion(T,kT,h,ix3,iz3)./(rho.*cP)  ...
-                 + advection(T,u,w,h,ix5,iz5,ADVN) + Qr./(rho.*cP);
+                 + advection(T,u,w,h,ix5,iz5,ADVN) ...
+                 + Qr./(rho.*cP);
                   
 
         case 'RK2'  % 2nd-order Runge-Kutta time integration scheme
             dTdt_half = diffusion(T                ,kT,h,ix3,iz3)./(rho.*cP) ...
                       + advection(T               ,u,w,h,ix5,iz5,ADVN);
             dTdt      = diffusion(T+dTdt_half*dt/2,kT, h,ix3,iz3)./(rho.*cP) ...
-                      + advection(T+dTdt_half*dt/2,u,w,h,ix5,iz5,ADVN) + Qr./(rho.*cP);
+                      + advection(T+dTdt_half*dt/2,u,w,h,ix5,iz5,ADVN) ...
+                      + Qr./(rho.*cP);
                       
     end
 

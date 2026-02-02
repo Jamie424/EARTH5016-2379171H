@@ -24,9 +24,15 @@ switch BC
         % example non-periodic indexing for N=4 
         % 3-point stencil            |-- i-1 --|-- i --|-- i+1 --|
         % 5-point stencil  |-- i-2 --|-- i-1 --|-- i --|-- i+1 --|-- i+2 --|
-        ix3 = [   1, 1:Nx, Nx    ];  iz3 = [   1, 1:Nz, Nz    ];
-        ix5 = [1, 1, 1:Nx, Nx, Nx];  iz5 = [1, 1, 1:Nz, Nz, Nz]; 
+        ix3 = [   1, 1:Nx, Nx    ];    iz3 = [   1, 1:Nz, Nz    ];
+        ix5 = [1, 1, 1:Nx, Nx, Nx];    iz5 = [1, 1, 1:Nz, Nz, Nz]; 
+    case 'X_PerZ_Iso'
+        % Isothermal at top/bottom, periodic horizontally
+        ix3 = [      Nx, 1:Nx, 1   ];    iz3 = [   1, 1:Nz, Nz    ];
+        ix5 = [Nx-1, Nx, 1:Nx, 1, 2];    iz5 = [1, 1, 1:Nz, Nz, Nz]; 
 end
+
+
 
 % set initial coefficient fields
 kT     = kT0     .* ones(Nz,Nx);         % matrix of initial thermal conductivity [W/m/K]
@@ -68,21 +74,23 @@ while t <= tend
     % Temperature dependant density
     rho = rho0 .* (1 - alphaT.*(T - T0));
 
-
+    v = -
 
    
     switch TINT % select explicit time integration scheme
         case 'FE1'  % 1st-order Forward Euler time integration scheme
             % get rate of change
             dTdt = diffusion(T,kT,h,ix3,iz3)./(rho.*cP)  ...
-                 + advection(T,u,w,h,ix5,iz5,ADVN) + Qr./(rho.*cP);
+                 + advection(T,u,w,h,ix5,iz5,ADVN) ...
+                 + Qr./(rho.*cP);
                   
 
         case 'RK2'  % 2nd-order Runge-Kutta time integration scheme
             dTdt_half = diffusion(T                ,kT,h,ix3,iz3)./(rho.*cP) ...
                       + advection(T               ,u,w,h,ix5,iz5,ADVN);
             dTdt      = diffusion(T+dTdt_half*dt/2,kT, h,ix3,iz3)./(rho.*cP) ...
-                      + advection(T+dTdt_half*dt/2,u,w,h,ix5,iz5,ADVN) + Qr./(rho.*cP);
+                      + advection(T+dTdt_half*dt/2,u,w,h,ix5,iz5,ADVN) ...
+                      + Qr./(rho.*cP);
                       
     end
 
@@ -310,6 +318,7 @@ end
 function Ta = analytical(f0,df,sgm0,k0,u0,w0,Xc,Zc,D,W,t)
 
 sgmt = sqrt(sgm0^2 + 2*k0*t);
+
 % sum each of the 9 combinations
 Ta   = f0 + df*(sgm0.^2/sgmt.^2)*(exp(-((Xc-(W/2    )- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (2*sgmt^2)) ...
                                 + exp(-((Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (2*sgmt^2)) ...
@@ -322,9 +331,14 @@ Ta   = f0 + df*(sgm0.^2/sgmt.^2)*(exp(-((Xc-(W/2    )- u0*t).^2 + (Zc-(D/2    ) 
                                 + exp(-((Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (2*sgmt^2)));
 
 end
-%test
 
 
-% get analytical function to work
+%****function for Darcy flux
 
+function vD = Darcy(kD, P, rho, g)
+
+
+
+
+end
 % 

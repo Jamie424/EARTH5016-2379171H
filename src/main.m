@@ -26,11 +26,6 @@ switch BC
         % 5-point stencil  |-- i-2 --|-- i-1 --|-- i --|-- i+1 --|-- i+2 --|
         ix3 = [   1, 1:Nx, Nx    ];    iz3 = [   1, 1:Nz, Nz    ];
         ix5 = [1, 1, 1:Nx, Nx, Nx];    iz5 = [1, 1, 1:Nz, Nz, Nz]; 
-
-    case 'X_PerZ_Iso'
-        % Isothermal at top/bottom, periodic horizontally
-        ix3 = [      Nx, 1:Nx, 1   ];    iz3 = [   1, 1:Nz, Nz    ];
-        ix5 = [Nx-1, Nx, 1:Nx, 1, 2];    iz5 = [1, 1, 1:Nz, Nz, Nz]; 
 end
 
 
@@ -84,8 +79,19 @@ while t <= tend
 
     % Temperature dependant density
     rho = rho0 .* (1 - alphaT.*(T - Tref));
+    Drho = rho - mean(rho,2);
 
-    [u,w] = darcy_flux(p, rho, KD, h, g, ix3, iz3)
+    % Get Darcy flux components
+    if k>=2e3
+    [u,w,res] = darcy_flux(p, Drho, g, KD, h, ix3, iz3);
+    w(2:end,:) = (1-air).*w(2:end,:);                
+    end
+
+    
+
+    while 
+
+
 
     % Closed top/bottom boundaries (no flow through vertical boundaries)
     w(1,:)   = 0;
@@ -332,61 +338,30 @@ dfdt  = - div_q;            % advection rate
 end
 
 
-% Function for Darcy flux (copilot help) **********************************
-function [u,w] = darcy_flux(p, rho, KD, h, g, ix3, iz3)
-
-% Computes Darcy flux components vD = [u,w]
-
-% Darcy law used:
-%   u = -KD * dp/dx
-%   w = -KD * (dp/dz - rho*g)
-
-% INPUTS:
-%   p   : (Nz x Nx) pressure [Pa] (cell centres)
-%   rho : (Nz x Nx) density  [kg/m^3] (cell centres)
-%   KD  : (Nz x Nx) mobility [m^2/(Pa*s)] (cell centres)
-%   h   : grid spacing [m]
-%   g   : gravity [m/s^2] (positive, acts downward)
-%   ix3 : ghosted x-index list length Nx+2 (periodic)
-%   iz3 : ghosted z-index list length Nz+2 (choose for BC)
-
-% OUTPUTS:
-%   u : (Nz x (Nx+1)) x-face Darcy flux [m/s]
-%   w : ((Nz+1) x Nx) z-face Darcy flux [m/s]
-
-    % x-faces pressures:
-    pL = p(:, ix3(1:end-1));     % Nz x (Nx+1)
-    pR = p(:, ix3(2:end  ));     % Nz x (Nx+1)
-
-    dpdx = (pR - pL) / h;        
-
-    % face mobility: average KD from adjacent cells
-    KDx = 0.5 * (KD(:, ix3(1:end-1)) + KD(:, ix3(2:end)));
-
-    % Darcy flux in x
-    u = -KDx .* dpdx;
 
 
-    % z-faces
-    % bottom/top cell pressures around each z-face
-    pB = p(iz3(1:end-1), :);     % (Nz+1) x Nx
-    pT = p(iz3(2:end  ), :);     % (Nz+1) x Nx
-    dpdz = (pT - pB) / h;        
+% Function for Darcy flux**********************************
+function [u,w,res] = darcy_flux(p, Drho, g, KD, h, ix, iz)
 
-    % face mobility and density: average from adjacent cells
-    KDz  = 0.5 * (KD(iz3(1:end-1), :)  + KD(iz3(2:end), :));
-    rhoz = 0.5 * (rho(iz3(1:end-1), :) + rho(iz3(2:end), :));
+% inputs:  
 
-    % Darcy flux in z (includes buoyancy)
-    w = -KDz .* (dpdz - rhoz * g);
+
+% calculate Darcy flux coefficient at cell faces
+kfz = (KD(iz(1:end-1),:)+KD(iz(2:end),:))/2;
+kfx = (KD(:,ix(1:end-1))+KD(:,ix(2:end)))/2;
+
+% calculate density coefficient at cell faces
+Drhoz = (Drho(iz(1:end-1),:)+Drho(iz(2:end),:))/2;
+
+% calculate diffusive flux of scalar field f
+w = - kfz .* diff(p(iz,:),1,1)/h - Drhoz*g;
+u = - kfx .* diff(p(:,ix),1,2)/h;
+
+% calculate Darcy flux balance for rate of change
+res = - diff(w,1,1)/h ...
+       - diff(u,1,2)/h;
 end
 
-function F = darcy_residual(u,w,h)
-% u: Nz x (Nx+1)
-% w: (Nz+1) x Nx
-% F: Nz x Nx (divergence at cell centres)
-    F = diff(w,1,1)/h + diff(u,1,2)/h;
-end
 
 
 
@@ -395,8 +370,6 @@ end
 
 
 % function below not used for Darcy flux version - no known analytical solution
-
-
 
 % get analytical solution at time t
 %Ta = analytical(T0,dT,sgm0,k0,u0,w0,Xc,Zc,D,W,t);

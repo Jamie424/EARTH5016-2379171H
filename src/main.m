@@ -43,12 +43,9 @@ p = zeros(Nz,Nx);
 % KD Darcy mobility field
 KD = KD0 .* ones(Nz,Nx);
 
-
 % Initial Darcy flux
 u = zeros(Nz,Nx+1);          % x-face flux  
 w = zeros(Nz+1,Nx);          % z-face flux
-
-
 
 % set time step size (Courant–Friedrichs–Lewy condition)
 dt_adv = (h/2)   / (max(abs(u(:))) + max(abs(w(:))) + eps); 
@@ -70,6 +67,12 @@ Tin = T;
 figure(1); clf
 makefig(xc,zc,T,Tin,Ta,0);
 
+
+
+
+
+
+
 %*****  Solve Model Equations
 while t <= tend
 
@@ -89,7 +92,7 @@ while t <= tend
 
     
 
-    while 
+     
 
 
 

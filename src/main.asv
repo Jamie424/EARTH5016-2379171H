@@ -39,94 +39,136 @@ Qr     = Qr0     .* ones(Nz,Nx);         % heat production [W/m3]
 
 % pressure field
 p = zeros(Nz,Nx); 
+resP = p*0;
 
 % KD Darcy mobility field
 KD = KD0 .* ones(Nz,Nx);
 
-
 % Initial Darcy flux
 u = zeros(Nz,Nx+1);          % x-face flux  
 w = zeros(Nz+1,Nx);          % z-face flux
-
-
 
 % set time step size (Courant–Friedrichs–Lewy condition)
 dt_adv = (h/2)   / (max(abs(u(:))) + max(abs(w(:))) + eps); 
 dt_dff = (h/2)^2 / max(kT(:)./rho(:)./cP(:) + eps);                                              
 dt     = CFL * min(dt_adv,dt_dff);               % time step [s]
 
+
+% pseudo-transient iterative step
+dtau = (h/2)^2 ./ max(KD(:) + eps);
+
 % Initialise time count variables
 t = 0;  % initial time [s]
 k = 0;  % initial time step count
 
 % set initial temperature field (linear gradient from Tbot to Ttop)
-T = Ttop + (zc(:)/D) * (Tbot - Ttop) .* ones(1,Nx);
+dr = randn(Nz,Nx);
+dr = imgaussfilt(dr,1);
+T = Ttop + (zc(:)/D) * (Tbot - Ttop) .* ones(1,Nx) + dr*1;
 T(1,:)   = Ttop;
 T(end,:) = Tbot;
-Tin = T;
-
+Tin  = T;
+resT = T*0;
+dTdt = 0*T;
 
 % initialise output figure with initial condition
 figure(1); clf
-makefig(xc,zc,T,Tin,Ta,0);
+makefig(xc,zc,T,p,resT,resP,0);
+
+
+
+
+
+
 
 %*****  Solve Model Equations
 while t <= tend
+
+    % store previous T and dTdt
+    To = T;
+    dTdto = dTdt;
 
     % increment time and step count
     t = t + dt;
     k = k + 1;
 
-    % Temperature dependant density
-    rho = rho0 .* (1 - alphaT.*(T - Tref));
-    Drho = rho - mean(rho,2);
-
-    % Get Darcy flux components
-    if k>=2e3
-    [u,w] = darcy_flux(p, Drho, g, KD, h, ix3, iz3);
-    w(2:end,:) = (1-air).*w(2:end,:);                
-    end
-
-    % get p-residual
-
-    while 
 
 
+    itP     = 0;
+    res_rms = 1;
+    dp      = 0*p;
+    while res_rms>= tolP
 
-    % Closed top/bottom boundaries (no flow through vertical boundaries)
-    w(1,:)   = 0;
-    w(end,:) = 0;
-    
-   
-    switch TINT % select explicit time integration scheme
-        case 'FE1'  % 1st-order Forward Euler time integration scheme
-            % get rate of change
+        % update T
+        if ~mod(itP,100)
             dTdt = diffusion(T,kT,h,ix3,iz3)./(rho.*cP)  ...
                  + advection(T,u,w,h,ix5,iz5,ADVN) ...
                  + Qr./(rho.*cP);
-                  
+    
+            resT = T - To - (dTdto+dTdt)/2 * dt; 
+    
+            resT(1,:)   = 0;
+            resT(end,:) = 0;
+    
+            T = T - resT/4;
+        end
 
-        case 'RK2'  % 2nd-order Runge-Kutta time integration scheme
-            dTdt_half = diffusion(T                ,kT,h,ix3,iz3)./(rho.*cP) ...
-                      + advection(T               ,u,w,h,ix5,iz5,ADVN) ...
-                      + Qr./(rho.*cP);
-            dTdt      = diffusion(T+dTdt_half*dt/2,kT, h,ix3,iz3)./(rho.*cP) ...
-                      + advection(T+dTdt_half*dt/2,u,w,h,ix5,iz5,ADVN) ...
-                      + Qr./(rho.*cP);
-                      
+        % Temperature dependant density
+        rhoW = rhoW0 .* (1 - alphaT.*(T - Tref));
+        Drho = rhoW - mean(rhoW,2);
+
+        % Get Darcy flux components
+        [u,w,resP] = darcy_flux(p, Drho, g, KD, h, ix3, iz3);
+        % w(2:end,:) = (1-air).*w(2:end,:);                
+ 
+        % Closed top/bottom boundaries (no flow through vertical boundaries)
+        w(1  ,:) = 0;
+        w(end,:) = 0;
+        
+        % pressure update 
+        dp = - alpha * dtau * resP + beta*dp;
+        p = p + dp;
+        
+        % Root mean square error of residuals
+        res_rms = rms(dtau*resP(:))/rms(p(:));
+
+        if itP >= 1e6
+            break
+        end
+
+        itP = itP + 1;
     end
 
-    % update temperature
-    T = T + dTdt * dt;  
-
-    % update boundary conditions for temperature
-    T(1,:)   = Ttop;
-    T(end,:) = Tbot;
+   
+    % switch TINT % select explicit time integration scheme
+    %     case 'FE1'  % 1st-order Forward Euler time integration scheme
+    %         % get rate of change
+    %         dTdt = diffusion(T,kT,h,ix3,iz3)./(rho.*cP)  ...
+    %              + advection(T,u,w,h,ix5,iz5,ADVN) ...
+    %              + Qr./(rho.*cP);
+    % 
+    % 
+    %     case 'RK2'  % 2nd-order Runge-Kutta time integration scheme
+    %         dTdt_half = diffusion(T                ,kT,h,ix3,iz3)./(rho.*cP) ...
+    %                   + advection(T               ,u,w,h,ix5,iz5,ADVN) ...
+    %                   + Qr./(rho.*cP);
+    %         dTdt      = diffusion(T+dTdt_half*dt/2,kT, h,ix3,iz3)./(rho.*cP) ...
+    %                   + advection(T+dTdt_half*dt/2,u,w,h,ix5,iz5,ADVN) ...
+    %                   + Qr./(rho.*cP);
+    % 
+    % end
+    % 
+    % % update temperature
+    % T = T + dTdt * dt;  
+    % 
+    % % update boundary conditions for temperature
+    % T(1,:)   = Ttop;
+    % T(end,:) = Tbot;
 
 
     % plot model progress
     if ~mod(k,nop)
-        makefig(xc,zc,T,Tin,Ta,t/yr);
+        makefig(xc,zc,T,p,resT,resP*dtau,t/yr);
         pause(0.1);
     end
 
@@ -148,23 +190,32 @@ disp(' ');
 
 
 
-
+%**************************************************************************
 %*****  Utility Functions  ************************************************
 
 %*****  Function to make output figure
 
-function makefig(x,z,T,Tin,Ta,t)
+function makefig(x,z,T,p,resT,resP,t)
 
-subplot(2,1,1);
+subplot(2,2,1);
 imagesc(x,z,T); axis equal tight; colorbar
 ylabel('z [m]','FontSize',15)
 title(['Temperature [C]; time = ',num2str(t),' [yr]'],'FontSize',17)
-subplot(2,1,2)
-imagesc(x,z,T - Ta); axis equal tight; colorbar
+subplot(2,2,2)
+imagesc(x,z,resT); axis equal tight; colorbar
 xlabel('x [m]','FontSize',15)
 ylabel('z [m]','FontSize',15)
-title('Normalized Num. Error [C]','FontSize',17)
-
+title('Residual Temperature [C]','FontSize',17)
+subplot(2,2,3)
+imagesc(x,z,p); axis equal tight; colorbar
+xlabel('x [m]','FontSize',15)
+ylabel('z [m]','FontSize',15)
+title('Pressure [Pa]','FontSize',17)
+subplot(2,2,4)
+imagesc(x,z,resP); axis equal tight; colorbar
+xlabel('x [m]','FontSize',15)
+ylabel('z [m]','FontSize',15)
+title('Residual Pressure [Pa]','FontSize',17)
 drawnow;
 
 end
@@ -338,8 +389,10 @@ dfdt  = - div_q;            % advection rate
 end
 
 
+
+
 % Function for Darcy flux**********************************
-function [u,w,res] = darcy_flux(f, Drho, g, KD, h, ix, iz)
+function [u,w,res] = darcy_flux(p, Drho, g, KD, h, ix, iz)
 
 % inputs:  
 
@@ -352,13 +405,14 @@ kfx = (KD(:,ix(1:end-1))+KD(:,ix(2:end)))/2;
 Drhoz = (Drho(iz(1:end-1),:)+Drho(iz(2:end),:))/2;
 
 % calculate diffusive flux of scalar field f
-w = - kfz .* diff(p(iz,:),1,1)/h - Drhoz*g;
+w = - kfz .* diff(p(iz,:),1,1)/h + kfz .* Drhoz*g;
 u = - kfx .* diff(p(:,ix),1,2)/h;
 
 % calculate Darcy flux balance for rate of change
-res = - diff(w,1,1)/h ...
-       - diff(u,1,2)/h;
+res = diff(w,1,1)/h + diff(u,1,2)/h;
 end
+
+
 
 
 

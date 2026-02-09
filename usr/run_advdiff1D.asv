@@ -12,7 +12,6 @@ h     = D/Nz;           % grid spacing (h = dx = dz)
 
 kT0   = 2;             % thermal conductivity [W/m/K]
 
-rhoW0 = 1000;          % density [kg/m3]
 rho0  = 2700;          % density [kg/m3]
 cP0   = 1100;          % heat capacity [J/kg/K]
 Qr0   = 0e-6;          % heat productivity [W/m3]
@@ -21,7 +20,7 @@ w0    = 1e-6;          % advection z-speed [m/s]
 
 % darcy flow parameters
 g       = 9.81;        % gravity [m/s^2]
-alphaT0 = 1e-5;        % thermal expansivity  [1/K]
+alphaT0 = 1e-6;        % thermal expansivity  [1/K]
 KD0     = 1e-7;        % Darcy mobility [m^2/(Pa*s)]
 Ttop    = 0;           % top temperature [C]
 Tbot    = 1000;        % bottom temperature [C]
@@ -40,13 +39,14 @@ TINT  = 'RK2';         % time integration scheme (Explicit:'FE1', 'RK2') (Implic
 SCHEME= 'explicit';    % Implicit or explicit scheme ('explicit', 'implicit')
 
 
+
+
+
 yr    = 3600*24*365;   % seconds per year [s]
-tend  = 1e3*yr;        % stopping time [s]
-CFL   = 1/2;           % time step limiter
-nop   = 20;            % make output figure every 'nop' time steps
-tolP  = 1e-8;          % Pressure tolerance [Pa] 
-alpha = 0.95;          % 
-beta  = 0.90;
+tend  = W/max(u0,k0);  % stopping time [s]
+CFL   = 1/8;           % time step limiter
+nop   = 100;           % make output figure every 'nop' time steps
+
 
 %*****  RUN MODEL
 run('../src/main.m');

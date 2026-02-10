@@ -76,11 +76,6 @@ figure(1); clf
 makefig(xc,zc,T,p,resT,resP,0);
 
 
-
-
-
-
-
 %*****  Solve Model Equations
 while t <= tend
 
@@ -92,15 +87,13 @@ while t <= tend
     t = t + dt;
     k = k + 1;
 
-
-
     itP     = 0;
     res_rms = 1;
     dp      = 0*p;
     while res_rms>= tolP
 
         % update T
-        if ~mod(itP,100)
+        if ~mod(itP,50)
             dTdt = diffusion(T,kT,h,ix3,iz3)./(rho.*cP)  ...
                  + advection(T,u,w,h,ix5,iz5,ADVN) ...
                  + Qr./(rho.*cP);
@@ -131,6 +124,11 @@ while t <= tend
         
         % Root mean square error of residuals
         res_rms = rms(dtau*resP(:))/rms(p(:));
+        
+        % set time step size (Courant–Friedrichs–Lewy condition)
+        dt_adv = (h/2)   / (max(abs(u(:))) + max(abs(w(:))) + eps); 
+        dt_dff = (h/2)^2 / max(kT(:)./rho(:)./cP(:) + eps);                                              
+        dt     = CFL * min(dt_adv,dt_dff);               % time step [s]
 
         if itP >= 1e6
             break

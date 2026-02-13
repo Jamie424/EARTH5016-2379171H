@@ -48,6 +48,7 @@ tolP  = 1e-8;          % Pressure tolerance [Pa]
 alpha = 0.95;          % 
 beta  = 0.90;
 
+runID = 'test';
 %*****  RUN MODEL
 run('../src/main.m');
 

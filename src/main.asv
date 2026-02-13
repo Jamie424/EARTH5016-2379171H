@@ -76,23 +76,22 @@ figure(1); clf
 makefig(xc,zc,T,p,resT,resP,0);
 
 
-
-
-
-
-
 %*****  Solve Model Equations
 while t <= tend
+    
+    % Print time step information
+    fprintf(1,'*****  step %d;  dt = %4.4e;  time = %4.4e [yr]\n\n',k,dt/yr,t/yr)
 
     % store previous T and dTdt
     To = T;
     dTdto = dTdt;
+    
+    % update pseudo-transient iterative step
+    dtau = (h/2)^2 ./ max(KD(:) + eps);
 
     % increment time and step count
     t = t + dt;
     k = k + 1;
-
-
 
     itP     = 0;
     res_rms = 1;
@@ -100,7 +99,7 @@ while t <= tend
     while res_rms>= tolP
 
         % update T
-        if ~mod(itP,100)
+        if ~mod(itP,50)
             dTdt = diffusion(T,kT,h,ix3,iz3)./(rho.*cP)  ...
                  + advection(T,u,w,h,ix5,iz5,ADVN) ...
                  + Qr./(rho.*cP);
@@ -131,7 +130,21 @@ while t <= tend
         
         % Root mean square error of residuals
         res_rms = rms(dtau*resP(:))/rms(p(:));
-
+        
+        % set time step size (Courant–Friedrichs–Lewy condition)
+        dt_adv = (h/2)   / (max(abs(u(:))) + max(abs(w(:))) + eps); 
+        dt_dff = (h/2)^2 / max(kT(:)./rho(:)./cP(:) + eps);                                              
+        dt     = CFL * min(dt_adv,dt_dff);               % time step [s]
+        
+        % print model progress
+        if ~mod(itP,5*nop)
+            fprintf('\n\n')
+            fprintf('*************************************************************\n');
+            fprintf('*****  GEOTHERMAL MODEL | %s  **************\n',datetime('now'));
+            fprintf('*************************************************************\n');
+            fprintf('\n   run ID: %s \n\n',runID);
+            fprintf(1,'  ---  iter %d;  res norm = %4.4e \n',itP,res_rms);
+        end
         if itP >= 1e6
             break
         end
@@ -171,18 +184,16 @@ while t <= tend
         makefig(xc,zc,T,p,resT,resP*dtau,t/yr);
         pause(0.1);
     end
-
-
 end
 
 %*****  calculate and display numerical error norm
-%Err = rms(T - Ta, 'all') / rms(Ta, 'all');
-
-disp(' ');
-disp(['Advection scheme: ',ADVN]);
-disp(['Time integration scheme: ',TINT]);
-disp(['Numerical error norm = ',num2str(Err)]);
-disp(' ');
+% %Err = rms(T - Ta, 'all') / rms(Ta, 'all');
+% 
+% disp(' ');
+% disp(['Advection scheme: ',ADVN]);
+% disp(['Time integration scheme: ',TINT]);
+% disp(['Numerical error norm = ',num2str(Err)]);
+% disp(' ');
 
 
 
@@ -413,7 +424,7 @@ res = diff(w,1,1)/h + diff(u,1,2)/h;
 end
 
 
-
+% Function to 
 
 
 

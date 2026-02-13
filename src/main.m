@@ -78,10 +78,16 @@ makefig(xc,zc,T,p,resT,resP,0);
 
 %*****  Solve Model Equations
 while t <= tend
+    
+    % Print time step information
+    fprintf(1,'*****  step %d;  dt = %4.4e;  time = %4.4e [yr]\n\n',k,dt/yr,t/yr)
 
     % store previous T and dTdt
     To = T;
     dTdto = dTdt;
+    
+    % update pseudo-transient iterative step
+    dtau = (h/2)^2 ./ max(KD(:) + eps);
 
     % increment time and step count
     t = t + dt;
@@ -99,10 +105,14 @@ while t <= tend
                  + Qr./(rho.*cP);
     
             resT = T - To - (dTdto+dTdt)/2 * dt; 
-    
-            resT(1,:)   = 0;
-            resT(end,:) = 0;
-    
+            
+            % fix air layer temperature 
+            resT(air) = 0;
+            T(air) = Ttop;
+
+            % resT(1,:)   = 0;
+            % resT(end,:) = 0;
+
             T = T - resT/4;
         end
 
@@ -129,7 +139,16 @@ while t <= tend
         dt_adv = (h/2)   / (max(abs(u(:))) + max(abs(w(:))) + eps); 
         dt_dff = (h/2)^2 / max(kT(:)./rho(:)./cP(:) + eps);                                              
         dt     = CFL * min(dt_adv,dt_dff);               % time step [s]
-
+        
+        % print model progress
+        if ~mod(itP,5*nop)
+            fprintf('\n\n')
+            fprintf('*************************************************************\n');
+            fprintf('*****  GEOTHERMAL MODEL | %s  **************\n',datetime('now'));
+            fprintf('*************************************************************\n');
+            fprintf('\n   run ID: %s \n\n',runID);
+            fprintf(1,'  ---  iter %d;  res norm = %4.4e \n',itP,res_rms);
+        end
         if itP >= 1e6
             break
         end
@@ -169,8 +188,6 @@ while t <= tend
         makefig(xc,zc,T,p,resT,resP*dtau,t/yr);
         pause(0.1);
     end
-
-
 end
 
 %*****  calculate and display numerical error norm
@@ -411,7 +428,9 @@ res = diff(w,1,1)/h + diff(u,1,2)/h;
 end
 
 
+% Function to calculate the Rayleigh number
 
+%function Ra = Rayleigh(rho,g,alphaT0,)
 
 
 

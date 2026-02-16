@@ -46,7 +46,7 @@ nop   = 1000;          % make output figure every 'nop' time steps
 run('../src/main.m');
 
 E(cc)  = Err;
-DT(cc) = dt;
+DT(cc) = dt_init;
 
 end
 

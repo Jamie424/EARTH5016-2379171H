@@ -1,6 +1,5 @@
 %*****  2D ADVECTION DIFFUSION MODEL OF HEAT TRANSPORT  *******************
 
-
 %*****  Initialise Model Setup
 
 % create coordinate vectors
@@ -9,8 +8,6 @@ zc = h/2:h:D-h/2;          % z-coordinate vector for cell centre positions [m]
 xf = 0:h:W ;               % x-coordinate vector for cell face positions [m]
 zf = 0:h:D ;               % z-coordinate vector for cell face positions [m]
 [Xc,Zc] = meshgrid(xc,zc); % create 2D coordinate arrays
-
-
 
 % set up ghosted index lists for boundary conditions
 switch BC
@@ -27,8 +24,6 @@ switch BC
         ix3 = [   1, 1:Nx, Nx    ];    iz3 = [   1, 1:Nz, Nz    ];
         ix5 = [1, 1, 1:Nx, Nx, Nx];    iz5 = [1, 1, 1:Nz, Nz, Nz]; 
 end
-
-
 
 % set initial coefficient fields
 kT     = kT0     .* ones(Nz,Nx);         % matrix of initial thermal conductivity [W/m/K]
@@ -59,13 +54,11 @@ switch MODE
         w = zeros(Nz+1,Nx);          % z-face flux
 end
 
-
-
-
 % set initial temperature field
 switch MODE
     case 'VERIFY'
-        T = analytical(T0,dT,sgm0,k0,u0,w0,Xc,Zc,D,W,0);
+        Ta = analytical(T0,dT,sgm0,k0,u0,w0,Xc,Zc,D,W,0);
+        T=Ta;
     case 'SIM'
         dr = randn(Nz,Nx);
         dr = imgaussfilt(dr,1);
@@ -89,6 +82,8 @@ dt_adv = (h/2)   / (max(abs(u(:))) + max(abs(w(:))) + eps);
 dt_dff = (h/2)^2 / max(kT(:)./rho(:)./cP(:) + eps);                                              
 dt     = CFL * min(dt_adv,dt_dff);               % time step [s]
 
+dt_init = dt;
+
 % pseudo-transient iterative step
 dtau = (h/2)^2 ./ max(KD(:) + eps);
 
@@ -101,10 +96,11 @@ switch MODE
     case 'VERIFY'
         % initialise output figure with initial condition
         figure(1); clf
-        makefig(xc,zc,T,p,resT,resP,0);
+        makefigverify(xc,zc,T,Ta,t/yr);
     case 'SIM'
         figure(1); clf
         makefig(xc,zc,T,KD,rho,kT,t/yr);
+        
 end
 
 %*****  Solve Model Equations
@@ -151,6 +147,11 @@ while t <= tend
                 disp(['Time integration scheme: ',TINT]);
                 disp(['Numerical error norm = ',num2str(Err)]);
                 disp(' ');
+
+                if ~mod(k,nop)
+                    makefigverify(xc,zc,T,Ta,t/yr)
+                    pause(0.1);
+                end
                          
 
         % Full Darcy/geothermal model
@@ -203,11 +204,6 @@ while t <= tend
                 
                 % Root mean square error of residuals
                 res_rms = rms(dtau*resP(:))/rms(p(:) + eps);
-
-                % set time step size (Courant–Friedrichs–Lewy condition)
-                dt_adv = (h/2)   / (max(abs(u(:))) + max(abs(w(:))) + eps); 
-                dt_dff = (h/2)^2 / max(kT(:)./(rho(:).*cP(:)) + eps);                                              
-                dt     = CFL * min(dt_adv,dt_dff);               % time step [s]
                 
                 % print model progress
                 if ~mod(itP,5*nop)
@@ -219,21 +215,24 @@ while t <= tend
                     fprintf(1,'*****  step %d;  dt = %4.4e; dtau = %4.4e;  time = %4.4e [yr]\n\n',k,dt/yr,dtau/yr,t/yr)
                     fprintf('\n   run ID: %s \n\n',runID);
                     fprintf(1,'  ---  iter %d;  res norm = %4.4e \n',itP,res_rms);
-                end
+                    fprintf("T min/max: %g %g\n", min(T(~air),[],'all'), max(T(~air),[],'all'));
+                    fprintf("P min/max: %g %g\n", min(p(~air),[],'all'), max(p(~air),[],'all'));
+                end      
+
+ 
                 if itP >= 1e6
                     break
                 end
                 itP = itP + 1;
+
             end
-            
 
-        % plot model progress
-    if ~mod(k,nop)
-        makefig(xc,zc,T,KD,rho,kT,t/yr);
-        pause(0.1);
+            % plot model progress
+            if ~mod(k,nop)
+                makefig(xc,zc,T,KD,rho,kT,t/yr);
+                pause(0.1);
+            end
     end
-
-   
 end
 
 
@@ -252,17 +251,12 @@ end
 
 
 
-
-
-
-
 %**************************************************************************
 %*****  Utility Functions  ************************************************
 
 %*****  Function to make output figure (Full sim)
 
 function makefig(x,z,T,KD,rho,kT,t)
-
 subplot(2,2,1);
 imagesc(x,z,T); axis equal tight; colorbar
 ylabel('z [m]','FontSize',15)
@@ -296,7 +290,7 @@ subplot(2,2,2)
 imagesc(x,z,T-Ta); axis equal tight; colorbar
 xlabel('x [m]','FontSize',15)
 ylabel('z [m]','FontSize',15)
-title('Darcy mobility','FontSize',17)
+title('Error: T - Ta','FontSize',17)
 drawnow;
 end
 
@@ -349,11 +343,11 @@ function dfdt = advection(f,u,w,h,ix,iz,ADVN)
 % iz:  ghosted index list z direction
 % ADVN: advection scheme ('UPW1', 'CFD2', 'UPW3')
 
-% output variables
+% output variable
 % dfdt: advection rate of scalar field
 
 
-%****** horizontal advection (x direction)
+%****** horizontal advection (x direction) ******
 
 % split the velocities into positive and negative
 u_pos = max(0,u);    % positive velocity (to the right)
@@ -413,8 +407,7 @@ div_qx_neg = (q_ip_neg - q_im_neg)/h;  % negative velocity
 div_qx     = div_qx_pos + div_qx_neg;     % combined flux x direction
 
 
-%****** vertical advection (z direction)
-
+%****** vertical advection (z direction) ********
 
 % split the velocities into positive and negative
 w_pos = max(0,w);    % positive velocity ('up' direction)
@@ -474,14 +467,9 @@ dfdt  = - div_q;            % advection rate
 end
 
 
-
-
 % Function for Darcy flux**********************************
 function [u,w,res] = darcy_flux(p, Drho, g, KD, h, ix, iz)
-
-% inputs:  
-
-
+ 
 % calculate Darcy flux coefficient at cell faces
 kfz = (KD(iz(1:end-1),:)+KD(iz(2:end),:))/2;
 kfx = (KD(:,ix(1:end-1))+KD(:,ix(2:end)))/2;
@@ -503,7 +491,6 @@ end
 function Ta = analytical(f0,df,sgm0,k0,u0,w0,Xc,Zc,D,W,t)
 
 sgmt = sqrt(sgm0^2 + 2*k0*t);
-
 % sum each of the 9 combinations
 Ta   = f0 + df*(sgm0.^2/sgmt.^2)*(exp(-((Xc-(W/2    )- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (2*sgmt^2)) ...
                                 + exp(-((Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (2*sgmt^2)) ...
@@ -514,6 +501,4 @@ Ta   = f0 + df*(sgm0.^2/sgmt.^2)*(exp(-((Xc-(W/2    )- u0*t).^2 + (Zc-(D/2    ) 
                                 + exp(-((Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (2*sgmt^2)) ...
                                 + exp(-((Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (2*sgmt^2)) ...
                                 + exp(-((Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (2*sgmt^2)));
-
 end
-

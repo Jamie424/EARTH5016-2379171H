@@ -38,6 +38,7 @@ BC    = 'insulating';  % boundary condition option flag ('insulating', 'periodic
 ADVN  = 'UPW3';        % advection scheme ('UPW1', 'CFD2', 'UPW3')
 TINT  = 'RK2';         % time integration scheme (Explicit:'FE1', 'RK2') (Implicit:'BE1', 'CN2')
 SCHEME= 'explicit';    % Implicit or explicit scheme ('explicit', 'implicit')
+MODE   = 'VERIFY';     % Verfification ('VERIFY','SIM')
 
 
 yr    = 3600*24*365;   % seconds per year [s]

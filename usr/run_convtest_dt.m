@@ -23,7 +23,7 @@ Qr0 = 0e-6;            % heat productivity [W/m3]
 u0 = 1e-6;             % advection x-speed [m/s]
 w0 = 1e-6;             % advection z-speed [m/s]
 
-% kD0                  % hydraulic conductivity [m/s]
+KD0     = 1e-7;        % Darcy mobility [m^2/(Pa*s)]
 
 T0    = 100;           % initial background temperature [C]
 dT    = 1000;          % initial temperature peak amplitude [C]
@@ -35,6 +35,7 @@ BC     = 'periodic';   % boundary condition option flag ('insulating', 'periodic
 ADVN   = 'UPW3';       % advection scheme ('UPW1', 'CFD2', 'UPW3')
 TINT   = 'RK2';        % time integration scheme ('FE1', 'RK2') (Implicit:'BE1', 'CN2')
 SCHEME = 'explicit';   % Explicit or implicit scheme ('explicit', 'implicit')
+MODE   = 'VERIFY';     % Verfification ('VERIFY','SIM')
 
 yr    = 3600*24*365;   % seconds per year [s]
 tend  = W/max(u0,k0);  % stopping time [s]

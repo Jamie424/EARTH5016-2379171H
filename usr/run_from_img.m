@@ -55,6 +55,7 @@ Tref    = Ttop;        % reference temperature for density law
 BC    = 'insulating';  % boundary condition option flag ('insulating', 'periodic')
 ADVN  = 'UPW3';        % advection scheme ('UPW1', 'CFD2', 'UPW3')
 TINT  = 'RK2';         % time integration scheme (Explicit:'FE1', 'RK2')
+MODE  = 'SIM';      % Verfification ('VERIFY','SIM')
 
 yr    = 3600*24*365;   % seconds per year [s]
 tend  = 1e4*yr;        % stopping time [s]

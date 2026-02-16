@@ -41,27 +41,48 @@ Qr     = Qr0     .* ones(Nz,Nx);         % heat production [W/m3]
 p = zeros(Nz,Nx); 
 resP = p*0;
 
-% KD Darcy mobility field
-KD = KD0 .* ones(Nz,Nx);
+switch MODE
+    case 'VERIFY'
+        KD = zeros(Nz,Nx);
+        qbot = 0;
+        air = false(Nz,Nx);
 
-% Initial Darcy flux
-u = zeros(Nz,Nx+1);          % x-face flux  
-w = zeros(Nz+1,Nx);          % z-face flux
+        %constant velocities
+        u = u0 * ones(Nz, Nx+1);
+        w = w0 * ones(Nz+1, Nx);
 
-% set initial temperature field (linear gradient from Tbot to Ttop)
-dr = randn(Nz,Nx);
-dr = imgaussfilt(dr,1);
-T = Ttop + geo * (zc(:) * ones(1,Nx)) + dr*1;
-% T = Ttop + (zc(:)/D) * (Tbot - Ttop) .* ones(1,Nx) + dr*1;
-T(air) = Ttop;
+    case 'SIM'
+        % KD Darcy mobility field
+        KD = KD0 .* ones(Nz,Nx);
+        % Initial Darcy flux
+        u = zeros(Nz,Nx+1);          % x-face flux  
+        w = zeros(Nz+1,Nx);          % z-face flux
+end
+
+
+
+
+% set initial temperature field
+switch MODE
+    case 'VERIFY'
+        T = analytical(T0,dT,sgm0,k0,u0,w0,Xc,Zc,D,W,0);
+    case 'SIM'
+        dr = randn(Nz,Nx);
+        dr = imgaussfilt(dr,1);
+        T = Ttop + geo * (zc(:) * ones(1,Nx)) + dr*1;
+        T(air) = Ttop;
+end
 Tin  = T;
 resT = T*0;
 dTdt = 0*T;
 
 % initialise darcy velocity
-rhoW = rhoW0 .* (1 - alphaT.*(T - Tref));
-Drho = rhoW - mean(rhoW,2);
-[u,w,resP] = darcy_flux(p, Drho, g, KD, h, ix3, iz3);
+switch MODE
+    case 'SIM'
+    rhoW = rhoW0 .* (1 - alphaT.*(T - Tref));
+    Drho = rhoW - mean(rhoW,2);
+    [u,w,resP] = darcy_flux(p, Drho, g, KD, h, ix3, iz3);
+end
 
 % set time step size (Courant–Friedrichs–Lewy condition)
 dt_adv = (h/2)   / (max(abs(u(:))) + max(abs(w(:))) + eps); 
@@ -75,10 +96,16 @@ dtau = (h/2)^2 ./ max(KD(:) + eps);
 t = 0;  % initial time [s]
 k = 0;  % initial time step count
 
-% initialise output figure with initial condition
-figure(1); clf
-makefig(xc,zc,T,p,resT,resP,0);
 
+switch MODE
+    case 'VERIFY'
+        % initialise output figure with initial condition
+        figure(1); clf
+        makefig(xc,zc,T,p,resT,resP,0);
+    case 'SIM'
+        figure(1); clf
+        makefig(xc,zc,T,KD,rho,kT,t/yr);
+end
 
 %*****  Solve Model Equations
 while t <= tend
@@ -88,122 +115,140 @@ while t <= tend
 
     % store previous T and dTdt
     To = T;
-    dTdto = dTdt;
-    
-    % update pseudo-transient iterative step
-    dtau = (h/2)^2 ./ max(KD(:) + eps);
 
     % increment time and step count
     t = t + dt;
     k = k + 1;
+    switch MODE
 
-    itP     = 0;
-    res_rms = 1;
-    dp      = 0*p;
-    while res_rms >= tolP
-
-        % update T
-        if ~mod(itP,50)
-            dTdt = diffusion(T,kT,h,ix3,iz3,qbot)./(rho.*cP)  ...
-                 + advection(T,u,w,h,ix5,iz5,ADVN) ...
-                 + Qr./(rho.*cP);
-    
-            resT = T - To - (dTdto+dTdt)/2 * dt; 
+        % constant velocity, No Darcy flow, pure advection diffusion
+        case 'VERIFY'
+                switch TINT % select explicit time integration scheme
+                    case 'FE1'  % 1st-order Forward Euler time integration scheme
+                        % get rate of change
+                        dTdt = diffusion(T,kT,h,ix3,iz3,qbot)./(rho.*cP)  ...
+                             + advection(T,u,w,h,ix5,iz5,ADVN) ...
+                             + Qr./(rho.*cP);
             
-            % fix air layer temperature 
-            resT(air) = 0;
-            T(air) = Ttop;
-            T(1,:)   = Ttop;
+            
+                    case 'RK2'  % 2nd-order Runge-Kutta time integration scheme
+                        dTdt_half = diffusion(T                ,kT,h,ix3,iz3,qbot)./(rho.*cP) ...
+                                  + advection(T               ,u,w,h,ix5,iz5,ADVN) ...
+                                  + Qr./(rho.*cP);
+                        dTdt      = diffusion(T+dTdt_half*dt/2,kT, h,ix3,iz3,qbot)./(rho.*cP) ...
+                                  + advection(T+dTdt_half*dt/2,u,w,h,ix5,iz5,ADVN) ...
+                                  + Qr./(rho.*cP);
+                end
+                % update temperature
+                T = T + dTdt * dt;  
 
-            %T(end,:) = Tbot;
-            % resT(1,:)   = 0;
-            % resT(end,:) = 0;
+                % *****  calculate and display numerical error norm
+                Ta  = analytical(T0,dT,sgm0,k0,u0,w0,Xc,Zc,D,W,t);
+                Err = rms(T - Ta, 'all') / rms(Ta, 'all');
+                
+                disp(' ');
+                disp(['Advection scheme: ',ADVN]);
+                disp(['Time integration scheme: ',TINT]);
+                disp(['Numerical error norm = ',num2str(Err)]);
+                disp(' ');
+                         
 
-            T = T - resT/3;
-        end
-
-        % Temperature dependant density
-        rhoW = rhoW0 .* (1 - alphaT.*(T - Tref));
-        Drho = rhoW - mean(rhoW,2);
-
-        % Get Darcy flux components
-        [u,w,resP] = darcy_flux(p, Drho, g, KD, h, ix3, iz3);
-        w(2:end,:) = (1-air).*w(2:end,:);                
- 
-        % Closed flow boundaries
-        w(1,:) = 0; w(end,:) = 0;
-        u(:,1) = 0; u(:,end) = 0;
+        % Full Darcy/geothermal model
+        case 'SIM'
+            dTdto = dTdt;
+            
+            % update pseudo-transient iterative step
+            dtau = (h/2)^2 ./ max(KD(:) + eps);
+            
+            itP     = 0;
+            res_rms = 1;
+            dp      = 0*p;
+            while res_rms >= tolP
         
-        % pressure update 
-        dp = - alpha * dtau * resP + beta*dp;
-        p = p + dp;
+                % update T
+                if ~mod(itP,50)
+                    dTdt = diffusion(T,kT,h,ix3,iz3,qbot)./(rho.*cP)  ...
+                         + advection(T,u,w,h,ix5,iz5,ADVN) ...
+                         + Qr./(rho.*cP);
+            
+                    resT = T - To - (dTdto+dTdt)/2 * dt; 
+                    
+                    % fix air layer temperature 
+                    resT(air) = 0;
+                    T(air) = Ttop;
+                    T(1,:)   = Ttop;
         
-        % Root mean square error of residuals
-        res_rms = rms(dtau*resP(:))/rms(p(:) + eps);
+                    %T(end,:) = Tbot;
+                    % resT(1,:)   = 0;
+                    % resT(end,:) = 0;
         
-        % print model progress
-        if ~mod(itP,5*nop)
-            fprintf('\n\n')
-            fprintf('*************************************************************\n');
-            fprintf('*****  GEOTHERMAL MODEL | %s  **************\n',datetime('now'));
-            fprintf('*************************************************************\n');
-            % Print time step information
-            fprintf(1,'*****  step %d;  dt = %4.4e; dtau = %4.4e;  time = %4.4e [yr]\n\n',k,dt/yr,dtau/yr,t/yr)
-            fprintf('\n   run ID: %s \n\n',runID);
-            fprintf(1,'  ---  iter %d;  res norm = %4.4e \n',itP,res_rms);
-        end
-        if itP >= 1e6
-            break
-        end
+                    T = T - resT/3;
+                end
+        
+                % Temperature dependant density
+                rhoW = rhoW0 .* (1 - alphaT.*(T - Tref));
+                Drho = rhoW - mean(rhoW,2);
+        
+                % Get Darcy flux components
+                [u,w,resP] = darcy_flux(p, Drho, g, KD, h, ix3, iz3);
+                w(2:end,:) = (1-air).*w(2:end,:);                
+         
+                % Closed flow boundaries
+                w(1,:) = 0; w(end,:) = 0;
+                u(:,1) = 0; u(:,end) = 0;
+                
+                % pressure update 
+                dp = - alpha * dtau * resP + beta*dp;
+                p = p + dp;
+                
+                % Root mean square error of residuals
+                res_rms = rms(dtau*resP(:))/rms(p(:) + eps);
 
-        itP = itP + 1;
-    end
-    
-    % set time step size (Courant–Friedrichs–Lewy condition)
-    dt_adv = (h/2)   / (max(abs(u(:))) + max(abs(w(:))) + eps); 
-    dt_dff = (h/2)^2 / max(kT(:)./(rho(:).*cP(:)) + eps);                                              
-    dt     = CFL * min(dt_adv,dt_dff);               % time step [s]
+                % set time step size (Courant–Friedrichs–Lewy condition)
+                dt_adv = (h/2)   / (max(abs(u(:))) + max(abs(w(:))) + eps); 
+                dt_dff = (h/2)^2 / max(kT(:)./(rho(:).*cP(:)) + eps);                                              
+                dt     = CFL * min(dt_adv,dt_dff);               % time step [s]
+                
+                % print model progress
+                if ~mod(itP,5*nop)
+                    fprintf('\n\n')
+                    fprintf('*************************************************************\n');
+                    fprintf('*****  GEOTHERMAL MODEL | %s  **************\n',datetime('now'));
+                    fprintf('*************************************************************\n');
+                    % Print time step information
+                    fprintf(1,'*****  step %d;  dt = %4.4e; dtau = %4.4e;  time = %4.4e [yr]\n\n',k,dt/yr,dtau/yr,t/yr)
+                    fprintf('\n   run ID: %s \n\n',runID);
+                    fprintf(1,'  ---  iter %d;  res norm = %4.4e \n',itP,res_rms);
+                end
+                if itP >= 1e6
+                    break
+                end
+                itP = itP + 1;
+            end
+            
 
         % plot model progress
     if ~mod(k,nop)
         makefig(xc,zc,T,KD,rho,kT,t/yr);
         pause(0.1);
     end
+
+   
 end
 
-    % switch TINT % select explicit time integration scheme
-    %     case 'FE1'  % 1st-order Forward Euler time integration scheme
-    %         % get rate of change
-    %         dTdt = diffusion(T,kT,h,ix3,iz3)./(rho.*cP)  ...
-    %              + advection(T,u,w,h,ix5,iz5,ADVN) ...
-    %              + Qr./(rho.*cP);
-    % 
-    % 
-    %     case 'RK2'  % 2nd-order Runge-Kutta time integration scheme
-    %         dTdt_half = diffusion(T                ,kT,h,ix3,iz3)./(rho.*cP) ...
-    %                   + advection(T               ,u,w,h,ix5,iz5,ADVN) ...
-    %                   + Qr./(rho.*cP);
-    %         dTdt      = diffusion(T+dTdt_half*dt/2,kT, h,ix3,iz3)./(rho.*cP) ...
-    %                   + advection(T+dTdt_half*dt/2,u,w,h,ix5,iz5,ADVN) ...
-    %                   + Qr./(rho.*cP);
-    % 
-    % end
-    % 
-    % % update temperature
-    % T = T + dTdt * dt;  
-    % 
-    % % update boundary conditions for temperature
-    % T(1,:)   = Ttop;
-    % T(end,:) = Tbot;
 
-%*****  calculate and display numerical error norm
-% %Err = rms(T - Ta, 'all') / rms(Ta, 'all');
-% 
-% disp(' ');
-% disp(['Advection scheme: ',ADVN]);
-% disp(['Time integration scheme: ',TINT]);
-% disp(['Numerical error norm = ',num2str(Err)]);
-% disp(' ');
+switch MODE
+    case 'VERIFY'
+    % *****  calculate and display numerical error norm
+    Ta  = analytical(T0,dT,sgm0,k0,u0,w0,Xc,Zc,D,W,t);
+    Err = rms(T - Ta, 'all') / rms(Ta, 'all');
+    
+    disp(' ');
+    disp(['Advection scheme: ',ADVN]);
+    disp(['Time integration scheme: ',TINT]);
+    disp(['Numerical error norm = ',num2str(Err)]);
+    disp(' ');
+end                         
 
 
 
@@ -214,7 +259,7 @@ end
 %**************************************************************************
 %*****  Utility Functions  ************************************************
 
-%*****  Function to make output figure
+%*****  Function to make output figure (Full sim)
 
 function makefig(x,z,T,KD,rho,kT,t)
 
@@ -238,8 +283,24 @@ xlabel('x [m]','FontSize',15)
 ylabel('z [m]','FontSize',15)
 title('Thermal conductivity','FontSize',17)
 drawnow;
-
 end
+
+
+%*****  Function to make output figure (verify against analytical solution)
+function makefigverify(x,z,T,Ta,t) 
+subplot(2,2,1);
+imagesc(x,z,T); axis equal tight; colorbar
+ylabel('z [m]','FontSize',15)
+title(['Temperature [C]; time = ',num2str(t),' [yr]'],'FontSize',17)
+subplot(2,2,2)
+imagesc(x,z,T-Ta); axis equal tight; colorbar
+xlabel('x [m]','FontSize',15)
+ylabel('z [m]','FontSize',15)
+title('Darcy mobility','FontSize',17)
+drawnow;
+end
+
+
 
 %**************************************************************************
 %*****  Function to calculate diffusion rate
@@ -435,20 +496,6 @@ u = - kfx .* diff(p(:,ix),1,2)/h;
 % calculate Darcy flux balance for rate of change
 res = diff(w,1,1)/h + diff(u,1,2)/h;
 end
-
-
-% Function to calculate the Rayleigh number
-
-%function Ra = Rayleigh(rho,g,alphaT0,)
-
-
-
-
-
-% function below not used for Darcy flux version - no known analytical solution
-
-% get analytical solution at time t
-%Ta = analytical(T0,dT,sgm0,k0,u0,w0,Xc,Zc,D,W,t);
 
 
 

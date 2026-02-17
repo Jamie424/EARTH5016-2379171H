@@ -157,7 +157,7 @@ while t <= tend
         case 'SIM'
 
             %%%%%%%%%%%%--------------
-            % if time < 20000 years then Darcy is off
+            % if time < x years then Darcy is off
             %%%%%%%%%%%%----------------
             if t < tDarcyOn
 
@@ -180,7 +180,7 @@ while t <= tend
 
 
             %**********
-            % After 20000 years turn Darcy on
+            % After x years turn Darcy on
             %************
             else
                 % initiate small perturbation when Darcy starts
@@ -261,10 +261,13 @@ while t <= tend
             % plot model progress
             if ~mod(k,10*nop)
                 Tempfig(xc,zc,T,t/yr)
+                isothermDepth2D(xc,zc,T,t/yr)
             end
+
             if ~mod(k,5*nop)
                 plotdrill(xc,zc,T,x_dh,zdrill,Tdrill,t,yr)
-                isothermplot(xc,zc,T,x_pds,t,yr)
+                isothermplot(xc,zc,T,air,x_pds,t,yr)
+                
                 pause(0.1);
             end
     end
@@ -587,37 +590,81 @@ drawnow
 end
 
 
-% create figure of drillhole site at isotherm depths
-function isothermplot(xc,zc,T,x_pds,t,yr)
 
-% Find nearest model column to drill location
+
+
+
+% function to create isotherm depths at drillsite (with copilot assistance)
+function isothermplot(xc,zc,T,air,x_pds,t,yr)
+
 [~, ix] = min(abs(xc - x_pds));
-    
-% get temperature profile 
-Tmodel = T(:,ix);
 
-z50  = zc(find(Tmodel >= 50 , 1, 'first'));
-z70  = zc(find(Tmodel >= 70 , 1, 'first'));
-z100 = zc(find(Tmodel >= 100, 1, 'first'));
-z120 = zc(find(Tmodel >= 120, 1, 'first'));
+Tcol = T(:,ix);
+aircol = air(:,ix);
 
+% surface = first rock cell (first non-air)
+kSurf = find(~aircol, 1, 'first');
+if isempty(kSurf)
+    warning('Column is all air at x=%.0f m', xc(ix));
+    return
+end
 
-% Create figure
+zRel = zc - zc(kSurf);          % depth below ground surface
+Trock = Tcol(kSurf:end);
+zRock = zRel(kSurf:end);
+
+levels = [50 70 100 120];
+zIso = nan(size(levels));
+
+for k = 1:numel(levels)
+    L = levels(k);
+    j = find(Trock(1:end-1) < L & Trock(2:end) >= L, 1, 'first');
+    if ~isempty(j)
+        zIso(k) = interp1(Trock(j:j+1), zRock(j:j+1), L);
+    elseif Trock(1) >= L
+        zIso(k) = 0;  % already above at surface
+    end
+end
+
 figure(80); clf
-plot(Tmodel, zc, 'b-', 'LineWidth', 2); hold on
+plot(Trock, zRock, 'b-', 'LineWidth', 2); hold on
 set(gca,'YDir','reverse')
-yline(z50 , '--r', sprintf('50°C @ %.0f m',  z50 ));
-yline(z70 , '--r', sprintf('70°C @ %.0f m',  z70 ));
-yline(z100, '--r', sprintf('100°C @ %.0f m', z100));
-yline(z120, '--r', sprintf('120°C @ %.0f m', z120));
+grid on
+
+% only draw ylines if the isotherm exists
+for k = 1:numel(levels)
+    if ~isnan(zIso(k))
+        yline(zIso(k), '--r', sprintf('%d°C @ %.0f m', levels(k), zIso(k)));
+    end
+end
 
 xlabel('Temperature [°C]')
-ylabel('Depth [m]')
-title(sprintf('Proposed drillsite at x ≈ %.0f m | t = %.1f yr', ...
-              xc(ix), t/yr))
-legend('Model','Isotherm depths','Location','southeast')
-grid on
+ylabel('Depth below ground [m]')
+title(sprintf('Proposed drillsite at x ≈ %.0f m | t = %.1f yr', xc(ix), t/yr))
+legend('Model','Location','southeast')
 drawnow
 end
 
-% function to create temperature plot
+% function to create 2D isotherm depths across domain (with copilot assistance)
+
+function isothermDepth2D(x, z, T, t)
+
+figure(60); clf
+
+imagesc(x,z,T);
+axis equal tight
+set(gca,'YDir','reverse')
+colorbar
+hold on
+
+% --- Add isotherm contour lines ---
+levels = [50 70 100 120];   % °C
+[C,hc] = contour(x,z,T,levels,'k','LineWidth',1.5);
+
+clabel(C,hc,'FontSize',10,'Color','k')
+
+xlabel('x [m]')
+ylabel('z [m]')
+title(['Temperature [C]; time = ',num2str(t),' [yr]'])
+
+end

@@ -6,7 +6,7 @@ clear all; close all; %clc;
 % load model setup from image, reduce to target grid size
 n_units = 10;                    % number of rock units contained in image
 units   = imread('units.tiff');  % read in cross section with rock units
-reduce  = 2;                     % reduce model resolution by factor
+reduce  = 3;                     % reduce model resolution by factor
 units   = imresize(units,1/reduce,'method','nearest');  % resize units map to model size
 
 % set model dimensions
@@ -40,7 +40,7 @@ cP0  = reshape(matprop(units,4),Nz,Nx);  % heat capacity [J/kg/K]
 Qr0  = reshape(matprop(units,5),Nz,Nx);  % heat productivity [W/m3]
 KD0  = reshape(matprop(units,6),Nz,Nx);  % segregation mobility [m2/Pas]
 KD0  = imgaussfilt(KD0,1);               % apply some smoothing for numerical stability
-
+KD0(air)=0;
 
 u0    = 1e-6;          % advection x-speed [m/s]
 w0    = 1e-6;          % advection z-speed [m/s]
@@ -59,7 +59,7 @@ MODE  = 'SIM';         % Verfification or simulation ('VERIFY','SIM')
 
 yr    = 3600*24*365;   % seconds per year [s]
 tend  = 1e7*yr;        % stopping time [s]
-CFL   = 1/2;           % time step limiter
+CFL   = 1/5;           % time step limiter
 nop   = 20;            % make output figure every 'nop' time steps
 tolP  = 1e-6;          % Pressure tolerance [Pa] 
 alpha = 0.80;          % 
@@ -87,7 +87,11 @@ x_dh = 5000;
 x_pds = 11200;
 
 % Turn on Darcy flow after x years
-tDarcyOn = 20000 * yr; % [s]
+tDarcyOn = 1e7 * yr; % [s]
+
+levels = [50,70,100,120];
+x_min = 10000;
+x_max = 12000;
 
 
 runID = 'Conduction';

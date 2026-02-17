@@ -6,7 +6,7 @@ clear all; close all; %clc;
 % load model setup from image, reduce to target grid size
 n_units = 10;                    % number of rock units contained in image
 units   = imread('units.tiff');  % read in cross section with rock units
-reduce  = 2;                     % reduce model resolution by factor
+reduce  = 3;                     % reduce model resolution by factor
 units   = imresize(units,1/reduce,'method','nearest');  % resize units map to model size
 
 % set model dimensions
@@ -87,7 +87,11 @@ x_dh = 5000;
 x_pds = 11200;
 
 % Turn on Darcy flow after x years
-tDarcyOn = 20000 * yr; % [s]
+tDarcyOn = 2e5 * yr; % [s]
+
+levels = [50,70,100,120];
+x_min = 0;
+x_max = 15000;
 
 
 runID = 'Conduction';

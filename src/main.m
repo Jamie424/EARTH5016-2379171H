@@ -103,6 +103,7 @@ switch MODE
         
 end
 
+
 %*****  Solve Model Equations
 while t <= tend
     
@@ -216,7 +217,10 @@ while t <= tend
                     fprintf('\n   run ID: %s \n\n',runID);
                     fprintf(1,'  ---  iter %d;  res norm = %4.4e \n',itP,res_rms);
                     fprintf("T min/max: %g %g\n", min(T(~air),[],'all'), max(T(~air),[],'all'));
-                    fprintf("P min/max: %g %g\n", min(p(~air),[],'all'), max(p(~air),[],'all'));
+                   % fprintf("P min/max: %g %g\n", min(p(~air),[],'all'), max(p(~air),[],'all'));
+                    q_est = -kT(end,:) .* (T(end,:) - T(end-1,:)) / h;
+                    disp([min(q_est), mean(q_est), max(q_est)])
+        
                 end      
 
  
@@ -228,9 +232,14 @@ while t <= tend
             end
 
             % plot model progress
+            if ~mod(k,5*nop)
+                Tempfig(xc,zc,T,t/yr)
+            end
             if ~mod(k,nop)
-                makefig(xc,zc,T,KD,rho,kT,t/yr);
+                plotdrill(xc,zc,T,x_dh,zdrill,Tdrill,t,yr)
+                isothermplot(xc,zc,T,x_pds,t,yr)
                 pause(0.1);
+
             end
     end
 end
@@ -254,7 +263,7 @@ end
 %**************************************************************************
 %*****  Utility Functions  ************************************************
 
-%*****  Function to make output figure (Full sim)
+%*****  Function to make output figure
 
 function makefig(x,z,T,KD,rho,kT,t)
 subplot(2,2,1);
@@ -265,19 +274,41 @@ subplot(2,2,2)
 imagesc(x,z,KD); axis equal tight; colorbar
 xlabel('x [m]','FontSize',15)
 ylabel('z [m]','FontSize',15)
-title('Darcy mobility','FontSize',17)
+title('Darcy mobility [m2/Pas]','FontSize',17)
 subplot(2,2,3)
 imagesc(x,z,rho); axis equal tight; colorbar
 xlabel('x [m]','FontSize',15)
 ylabel('z [m]','FontSize',15)
-title('density','FontSize',17)
+title('density [kg/m3]','FontSize',17)
 subplot(2,2,4)
 imagesc(x,z,kT); axis equal tight; colorbar
 xlabel('x [m]','FontSize',15)
 ylabel('z [m]','FontSize',15)
-title('Thermal conductivity','FontSize',17)
+title('Thermal conductivity [W/m/K]','FontSize',17)
 drawnow;
 end
+
+
+%*****  Function to make output figure
+function Tempfig(x,z,T,t)
+figure(70); clf
+imagesc(x,z,T); axis equal tight; colorbar
+ylabel('z [m]','FontSize',15)
+title(['Temperature [C]; time = ',num2str(t),' [yr]'],'FontSize',17)
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 %*****  Function to make output figure (verify against analytical solution)
@@ -502,3 +533,66 @@ Ta   = f0 + df*(sgm0.^2/sgmt.^2)*(exp(-((Xc-(W/2    )- u0*t).^2 + (Zc-(D/2    ) 
                                 + exp(-((Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (2*sgmt^2)) ...
                                 + exp(-((Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (2*sgmt^2)));
 end
+
+%***** Function to plot the model profile at a given x coordinate
+% Granite Drillhole approx x = 5000 plus minus 100
+% Proposed drillsite approx x = 11200
+
+function plotdrill(xc,zc,T,x_dh,zdrill,Tdrill,t,yr)
+
+% Find nearest model column to drill location
+[~, ix] = min(abs(xc - x_dh));
+    
+% get temperature profile 
+Tmodel = T(:,ix);
+
+% Create figure
+figure(100); clf
+plot(Tmodel, zc, 'b-', 'LineWidth', 2); hold on
+plot(Tdrill, zdrill, 'ro', 'MarkerFaceColor','r');
+
+set(gca,'YDir','reverse')
+xlabel('Temperature [°C]')
+ylabel('Depth [m]')
+title(sprintf('Drillhole Comparison at x ≈ %.0f m | t = %.1f yr', ...
+              xc(ix), t/yr))
+legend('Model','Drillhole data','Location','southeast')
+grid on
+drawnow
+end
+
+
+% create figure of drillhole site at isotherm depths
+function isothermplot(xc,zc,T,x_pds,t,yr)
+
+% Find nearest model column to drill location
+[~, ix] = min(abs(xc - x_pds));
+    
+% get temperature profile 
+Tmodel = T(:,ix);
+
+z50  = zc(find(Tmodel >= 50 , 1, 'first'));
+z70  = zc(find(Tmodel >= 70 , 1, 'first'));
+z100 = zc(find(Tmodel >= 100, 1, 'first'));
+z120 = zc(find(Tmodel >= 120, 1, 'first'));
+
+
+% Create figure
+figure(80); clf
+plot(Tmodel, zc, 'b-', 'LineWidth', 2); hold on
+set(gca,'YDir','reverse')
+yline(z50 , '--r', sprintf('50°C @ %.0f m',  z50 ));
+yline(z70 , '--r', sprintf('70°C @ %.0f m',  z70 ));
+yline(z100, '--r', sprintf('100°C @ %.0f m', z100));
+yline(z120, '--r', sprintf('120°C @ %.0f m', z120));
+
+xlabel('Temperature [°C]')
+ylabel('Depth [m]')
+title(sprintf('Proposed drillsite at x ≈ %.0f m | t = %.1f yr', ...
+              xc(ix), t/yr))
+legend('Model','Isotherm depths','Location','southeast')
+grid on
+drawnow
+end
+
+% function to create temperature plot

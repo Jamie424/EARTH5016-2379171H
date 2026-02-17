@@ -1,6 +1,5 @@
 %*****  2D ADVECTION DIFFUSION MODEL OF HEAT TRANSPORT  *******************
 
-
 %*****  Initialise Model Setup
 
 % create coordinate vectors
@@ -9,8 +8,6 @@ zc = h/2:h:D-h/2;          % z-coordinate vector for cell centre positions [m]
 xf = 0:h:W ;               % x-coordinate vector for cell face positions [m]
 zf = 0:h:D ;               % z-coordinate vector for cell face positions [m]
 [Xc,Zc] = meshgrid(xc,zc); % create 2D coordinate arrays
-
-
 
 % set up ghosted index lists for boundary conditions
 switch BC
@@ -27,8 +24,6 @@ switch BC
         ix3 = [   1, 1:Nx, Nx    ];    iz3 = [   1, 1:Nz, Nz    ];
         ix5 = [1, 1, 1:Nx, Nx, Nx];    iz5 = [1, 1, 1:Nz, Nz, Nz]; 
 end
-
-
 
 % set initial coefficient fields
 kT     = kT0     .* ones(Nz,Nx);         % matrix of initial thermal conductivity [W/m/K]
@@ -58,9 +53,6 @@ switch MODE
         u = zeros(Nz,Nx+1);          % x-face flux  
         w = zeros(Nz+1,Nx);          % z-face flux
 end
-
-
-
 
 % set initial temperature field
 switch MODE
@@ -110,6 +102,7 @@ switch MODE
         makefig(xc,zc,T,KD,rho,kT,t/yr);
         
 end
+
 
 %*****  Solve Model Equations
 while t <= tend
@@ -224,7 +217,10 @@ while t <= tend
                     fprintf('\n   run ID: %s \n\n',runID);
                     fprintf(1,'  ---  iter %d;  res norm = %4.4e \n',itP,res_rms);
                     fprintf("T min/max: %g %g\n", min(T(~air),[],'all'), max(T(~air),[],'all'));
-                    fprintf("P min/max: %g %g\n", min(p(~air),[],'all'), max(p(~air),[],'all'));
+                   % fprintf("P min/max: %g %g\n", min(p(~air),[],'all'), max(p(~air),[],'all'));
+                    q_est = -kT(end,:) .* (T(end,:) - T(end-1,:)) / h;
+                    disp([min(q_est), mean(q_est), max(q_est)])
+        
                 end      
 
  
@@ -237,15 +233,13 @@ while t <= tend
 
             % plot model progress
             if ~mod(k,nop)
-                makefig(xc,zc,T,KD,rho,kT,t/yr);
+                Tempfig(x,z,T,t)
+                plotdrill(xc,zc,T,x_dh,zdrill,Tdrill,t,yr)
+                isothermplot(xc,zc,T,x_pds,t,yr)
                 pause(0.1);
+
             end
-
     end
-
-
-
-   
 end
 
 
@@ -264,14 +258,10 @@ end
 
 
 
-
-
-
-
 %**************************************************************************
 %*****  Utility Functions  ************************************************
 
-%*****  Function to make output figure (Full sim)
+%*****  Function to make output figure
 
 function makefig(x,z,T,KD,rho,kT,t)
 subplot(2,2,1);
@@ -295,6 +285,27 @@ ylabel('z [m]','FontSize',15)
 title('Thermal conductivity','FontSize',17)
 drawnow;
 end
+
+
+%*****  Function to make output figure
+function Tempfig(x,z,T,t)
+imagesc(x,z,T); axis equal tight; colorbar
+ylabel('z [m]','FontSize',15)
+title(['Temperature [C]; time = ',num2str(t),' [yr]'],'FontSize',17)
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 %*****  Function to make output figure (verify against analytical solution)
@@ -360,11 +371,11 @@ function dfdt = advection(f,u,w,h,ix,iz,ADVN)
 % iz:  ghosted index list z direction
 % ADVN: advection scheme ('UPW1', 'CFD2', 'UPW3')
 
-% output variables
+% output variable
 % dfdt: advection rate of scalar field
 
 
-%****** horizontal advection (x direction)
+%****** horizontal advection (x direction) ******
 
 % split the velocities into positive and negative
 u_pos = max(0,u);    % positive velocity (to the right)
@@ -424,8 +435,7 @@ div_qx_neg = (q_ip_neg - q_im_neg)/h;  % negative velocity
 div_qx     = div_qx_pos + div_qx_neg;     % combined flux x direction
 
 
-%****** vertical advection (z direction)
-
+%****** vertical advection (z direction) ********
 
 % split the velocities into positive and negative
 w_pos = max(0,w);    % positive velocity ('up' direction)
@@ -485,14 +495,9 @@ dfdt  = - div_q;            % advection rate
 end
 
 
-
-
 % Function for Darcy flux**********************************
 function [u,w,res] = darcy_flux(p, Drho, g, KD, h, ix, iz)
-
-% inputs:  
-
-
+ 
 % calculate Darcy flux coefficient at cell faces
 kfz = (KD(iz(1:end-1),:)+KD(iz(2:end),:))/2;
 kfx = (KD(:,ix(1:end-1))+KD(:,ix(2:end)))/2;
@@ -514,7 +519,6 @@ end
 function Ta = analytical(f0,df,sgm0,k0,u0,w0,Xc,Zc,D,W,t)
 
 sgmt = sqrt(sgm0^2 + 2*k0*t);
-
 % sum each of the 9 combinations
 Ta   = f0 + df*(sgm0.^2/sgmt.^2)*(exp(-((Xc-(W/2    )- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (2*sgmt^2)) ...
                                 + exp(-((Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (2*sgmt^2)) ...
@@ -525,6 +529,67 @@ Ta   = f0 + df*(sgm0.^2/sgmt.^2)*(exp(-((Xc-(W/2    )- u0*t).^2 + (Zc-(D/2    ) 
                                 + exp(-((Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (2*sgmt^2)) ...
                                 + exp(-((Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (2*sgmt^2)) ...
                                 + exp(-((Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (2*sgmt^2)));
-
 end
 
+%***** Function to plot the model profile at a given x coordinate
+% Granite Drillhole approx x = 5000 plus minus 100
+% Proposed drillsite approx x = 11200
+
+function plotdrill(xc,zc,T,x_dh,zdrill,Tdrill,t,yr)
+
+% Find nearest model column to drill location
+[~, ix] = min(abs(xc - x_dh));
+    
+% get temperature profile 
+Tmodel = T(:,ix);
+
+% Create figure
+figure(100); clf
+plot(Tmodel, zc, 'b-', 'LineWidth', 2); hold on
+plot(Tdrill, zdrill, 'ro', 'MarkerFaceColor','r');
+
+set(gca,'YDir','reverse')
+xlabel('Temperature [°C]')
+ylabel('Depth [m]')
+title(sprintf('Drillhole Comparison at x ≈ %.0f m | t = %.1f yr', ...
+              xc(ix), t/yr))
+legend('Model','Drillhole data','Location','southeast')
+grid on
+drawnow
+end
+
+
+% create figure of drillhole site at isotherm depths
+function isothermplot(xc,zc,T,x_pds,t,yr)
+
+% Find nearest model column to drill location
+[~, ix] = min(abs(xc - x_pds));
+    
+% get temperature profile 
+Tmodel = T(:,ix);
+
+z50  = zc(find(Tmodel >= 50 , 1, 'first'));
+z70  = zc(find(Tmodel >= 70 , 1, 'first'));
+z100 = zc(find(Tmodel >= 100, 1, 'first'));
+z120 = zc(find(Tmodel >= 120, 1, 'first'));
+
+
+% Create figure
+figure(80); clf
+plot(Tmodel, zc, 'b-', 'LineWidth', 2); hold on
+set(gca,'YDir','reverse')
+yline(z50 , '--r', sprintf('50°C @ %.0f m',  z50 ));
+yline(z70 , '--r', sprintf('70°C @ %.0f m',  z70 ));
+yline(z100, '--r', sprintf('100°C @ %.0f m', z100));
+yline(z120, '--r', sprintf('120°C @ %.0f m', z120));
+
+xlabel('Temperature [°C]')
+ylabel('Depth [m]')
+title(sprintf('Proposed drillsite at x ≈ %.0f m | t = %.1f yr', ...
+              xc(ix), t/yr))
+legend('Model','Isotherm depths','Location','southeast')
+grid on
+drawnow
+end
+
+% function to create temperature plot

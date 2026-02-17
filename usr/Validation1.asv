@@ -58,24 +58,22 @@ TINT  = 'RK2';         % time integration scheme (Explicit:'FE1', 'RK2')
 MODE  = 'SIM';         % Verfification or simulation ('VERIFY','SIM')
 
 yr    = 3600*24*365;   % seconds per year [s]
-tend  = 1e4*yr;        % stopping time [s]
+tend  = 1e7*yr;        % stopping time [s]
 CFL   = 1/2;           % time step limiter
 nop   = 20;            % make output figure every 'nop' time steps
-tolP  = 1e-7;          % Pressure tolerance [Pa] 
-alpha = 0.95;          % 
-beta  = 0.90;
+tolP  = 1e-6;          % Pressure tolerance [Pa] 
+alpha = 0.80;          % 
+beta  = 0.80;
 geo   = 0.03;          % geotherm [K/m]
 qbot  = 0.07;          % vertical upward heat flux at boundary [W/m^2] 
 
 
-% Diffusion and Basal Heat flux only (no radiogenic heating/Darcy mobility)
-
-
+% Diffusion and Basal Heat flux only (no radiogenic heating/Darcy
+% mobility)   *****uncomment and run*****
 % Qr0(:) = 0;    % No radiogenic heating
 % KD0(:)   = 0;  % No Darcy flow
 % alphaT0  = 0;  % No thermal expansivity
-
-u0 = 0; w0 = 0;
+% u0 = 0; w0 = 0;
 
 
 
@@ -86,7 +84,12 @@ x_dh = 5000;
 
 
 % proposed drill site
-x_pd 
+x_pds = 11200;
+
+% Turn on Darcy flow after x years
+tDarcyOn = 20000 * yr; % [s]
+
+
 runID = 'Conduction';
 %*****  RUN MODEL
 run('../src/main.m');

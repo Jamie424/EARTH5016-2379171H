@@ -40,7 +40,7 @@ cP0  = reshape(matprop(units,4),Nz,Nx);  % heat capacity [J/kg/K]
 Qr0  = reshape(matprop(units,5),Nz,Nx);  % heat productivity [W/m3]
 KD0  = reshape(matprop(units,6),Nz,Nx);  % segregation mobility [m2/Pas]
 KD0  = imgaussfilt(KD0,1);               % apply some smoothing for numerical stability
-
+KD0(air) = 0;
 
 u0    = 1e-6;          % advection x-speed [m/s]
 w0    = 1e-6;          % advection z-speed [m/s]

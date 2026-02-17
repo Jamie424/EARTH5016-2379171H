@@ -112,10 +112,8 @@ while t <= tend
 
     % store previous T and dTdt
     To = T;
-
-    % increment time and step count
-    t = t + dt;
-    k = k + 1;
+    k = k + 1; 
+    
     switch MODE
 
         % constant velocity, No Darcy flow, pure advection diffusion
@@ -157,55 +155,62 @@ while t <= tend
 
         % Full Darcy/geothermal model
         case 'SIM'
-            dTdto = dTdt;
-            
-            % update pseudo-transient iterative step
-            dtau = (h/2)^2 ./ max(KD(:) + eps);
-            
-            itP     = 0;
-            res_rms = 1;
-            dp      = 0*p;
+
+            %%%%%%%%%%%%--------------
+            % if time < 20000 years then Darcy is off
+            %%%%%%%%%%%%----------------
+            if t < tDarcyOn
+
+                % Zero Darcy velocities
+                u(:) = 0;
+                w(:) = 0;
+
+                dt_dff = (h/2)^2 / max(kT(:)./rho(:)./cP(:) + eps);                                              
+                dt     = CFL * dt_dff;               % time step [s]
+
+                % Temperature update (no advection)
+                dTdt = diffusion(T,kT,h,ix3,iz3,qbot)./(rho.*cP) ...
+                     + Qr./(rho.*cP);
+        
+                T = T + dTdt * dt;
+                
+                % Enforce surface / air BC
+                T(air) = Ttop;
+                T(1,:) = Ttop;
+
+
+            %**********
+            % After 20000 years turn Darcy on
+            %************
+            else
+
+                % update pseudo-transient iterative step
+                dtau = (h/2)^2 ./ max(KD(:) + eps);
+
+                dTdto = dTdt;
+                itP     = 0;
+                res_rms = 1;
+                dp      = 0*p;
+                res0 = [];
+
             while res_rms >= tolP
-        
-                % update T
-                if ~mod(itP,50)
-                    dTdt = diffusion(T,kT,h,ix3,iz3,qbot)./(rho.*cP)  ...
-                         + advection(T,u,w,h,ix5,iz5,ADVN) ...
-                         + Qr./(rho.*cP);
-            
-                    resT = T - To - (dTdto+dTdt)/2 * dt; 
-                    
-                    % fix air layer temperature 
-                    resT(air) = 0;
-                    T(air) = Ttop;
-                    T(1,:)   = Ttop;
-        
-                    %T(end,:) = Tbot;
-                    % resT(1,:)   = 0;
-                    % resT(end,:) = 0;
-        
-                    T = T - resT/3;
-                end
-        
+
                 % Temperature dependant density
                 rhoW = rhoW0 .* (1 - alphaT.*(T - Tref));
                 Drho = rhoW - mean(rhoW,2);
-        
-                % Get Darcy flux components
+
+                % Get Darcy flux, residuals, close boundaries
                 [u,w,resP] = darcy_flux(p, Drho, g, KD, h, ix3, iz3);
-                w(2:end,:) = (1-air).*w(2:end,:);                
-         
-                % Closed flow boundaries
-                w(1,:) = 0; w(end,:) = 0;
-                u(:,1) = 0; u(:,end) = 0;
-                
+                w(2:end,:) = (1-air).*w(2:end,:); 
+
                 % pressure update 
                 dp = - alpha * dtau * resP + beta*dp;
                 p = p + dp;
-                
+
                 % Root mean square error of residuals
-                res_rms = rms(dtau*resP(:))/rms(p(:) + eps);
-                
+                den = max(rms(p(:)), 1e-10);
+                res_rms = rms(dtau*resP(:))/ den;
+
                 % print model progress
                 if ~mod(itP,5*nop)
                     fprintf('\n\n')
@@ -220,25 +225,48 @@ while t <= tend
                    % fprintf("P min/max: %g %g\n", min(p(~air),[],'all'), max(p(~air),[],'all'));
                     q_est = -kT(end,:) .* (T(end,:) - T(end-1,:)) / h;
                     disp([min(q_est), mean(q_est), max(q_est)])
-        
-                end      
+                end
 
- 
                 if itP >= 1e6
                     break
                 end
-                itP = itP + 1;
 
+                itP = itP + 1;
             end
 
+                
+            % update Temperature
+            dTdt = diffusion(T,kT,h,ix3,iz3,qbot)./(rho.*cP)  ...
+                 + advection(T,u,w,h,ix5,iz5,ADVN) ...
+                 + Qr./(rho.*cP);
+            
+            % set time step size (Courant–Friedrichs–Lewy condition)
+            dt_adv = (h/2)   / (max(abs(u(:))) + max(abs(w(:))) + eps); 
+            dt_dff = (h/2)^2 / max(kT(:)./rho(:)./cP(:) + eps);                                              
+            dt     = CFL * min(dt_adv,dt_dff);               % time step [s]
+            
+            resT = T - To - (dTdto+dTdt)/2 * dt; 
+            
+            % fix air layer temperature 
+            resT(air) = 0;
+            T(air) = Ttop;
+            T(1,:)   = Ttop;
+
+            T = T - resT/3;
+                end 
+
             % plot model progress
+            if ~mod(k,2*nop)
+                Tempfig(xc,zc,T,t/yr)
+            end
             if ~mod(k,nop)
-                Tempfig(x,z,T,t)
                 plotdrill(xc,zc,T,x_dh,zdrill,Tdrill,t,yr)
                 isothermplot(xc,zc,T,x_pds,t,yr)
                 pause(0.1);
-
             end
+           % increment time and step count
+    t = t + dt;
+    
     end
 end
 
@@ -272,23 +300,24 @@ subplot(2,2,2)
 imagesc(x,z,KD); axis equal tight; colorbar
 xlabel('x [m]','FontSize',15)
 ylabel('z [m]','FontSize',15)
-title('Darcy mobility','FontSize',17)
+title('Darcy mobility [m2/Pas]','FontSize',17)
 subplot(2,2,3)
 imagesc(x,z,rho); axis equal tight; colorbar
 xlabel('x [m]','FontSize',15)
 ylabel('z [m]','FontSize',15)
-title('density','FontSize',17)
+title('density [kg/m3]','FontSize',17)
 subplot(2,2,4)
 imagesc(x,z,kT); axis equal tight; colorbar
 xlabel('x [m]','FontSize',15)
 ylabel('z [m]','FontSize',15)
-title('Thermal conductivity','FontSize',17)
+title('Thermal conductivity [W/m/K]','FontSize',17)
 drawnow;
 end
 
 
 %*****  Function to make output figure
 function Tempfig(x,z,T,t)
+figure(70); clf
 imagesc(x,z,T); axis equal tight; colorbar
 ylabel('z [m]','FontSize',15)
 title(['Temperature [C]; time = ',num2str(t),' [yr]'],'FontSize',17)
@@ -498,9 +527,14 @@ end
 % Function for Darcy flux**********************************
 function [u,w,res] = darcy_flux(p, Drho, g, KD, h, ix, iz)
  
-% calculate Darcy flux coefficient at cell faces
-kfz = (KD(iz(1:end-1),:)+KD(iz(2:end),:))/2;
-kfx = (KD(:,ix(1:end-1))+KD(:,ix(2:end)))/2;
+% calculate Darcy flux coefficient at cell faces using harmonic averaging
+KD1 = KD(iz(1:end-1),:);
+KD2 = KD(iz(2:end),:);
+kfz = 2*KD1.*KD2 ./ (KD1 + KD2 + eps);
+
+KD1 = KD(:,ix(1:end-1));
+KD2 = KD(:,ix(2:end));
+kfx = 2*KD1.*KD2 ./ (KD1 + KD2 + eps);
 
 % calculate density coefficient at cell faces
 Drhoz = (Drho(iz(1:end-1),:)+Drho(iz(2:end),:))/2;
@@ -508,6 +542,10 @@ Drhoz = (Drho(iz(1:end-1),:)+Drho(iz(2:end),:))/2;
 % calculate diffusive flux of scalar field f
 w = - kfz .* diff(p(iz,:),1,1)/h + kfz .* Drhoz*g;
 u = - kfx .* diff(p(:,ix),1,2)/h;
+
+% Closed flow boundaries
+w(1,:) = 0; w(end,:) = 0;
+u(:,1) = 0; u(:,end) = 0;
 
 % calculate Darcy flux balance for rate of change
 res = diff(w,1,1)/h + diff(u,1,2)/h;

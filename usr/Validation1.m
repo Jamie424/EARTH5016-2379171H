@@ -40,7 +40,7 @@ cP0  = reshape(matprop(units,4),Nz,Nx);  % heat capacity [J/kg/K]
 Qr0  = reshape(matprop(units,5),Nz,Nx);  % heat productivity [W/m3]
 KD0  = reshape(matprop(units,6),Nz,Nx);  % segregation mobility [m2/Pas]
 KD0  = imgaussfilt(KD0,1);               % apply some smoothing for numerical stability
-
+KD0(air)=0;
 
 u0    = 1e-6;          % advection x-speed [m/s]
 w0    = 1e-6;          % advection z-speed [m/s]
@@ -59,13 +59,13 @@ MODE  = 'SIM';         % Verfification or simulation ('VERIFY','SIM')
 
 yr    = 3600*24*365;   % seconds per year [s]
 tend  = 1e7*yr;        % stopping time [s]
-CFL   = 1/2;           % time step limiter
+CFL   = 1/5;           % time step limiter
 nop   = 20;            % make output figure every 'nop' time steps
 tolP  = 1e-6;          % Pressure tolerance [Pa] 
 alpha = 0.80;          % 
 beta  = 0.80;
 geo   = 0.03;          % geotherm [K/m]
-qbot  = 0.1;          % vertical upward heat flux at boundary [W/m^2] 
+qbot  = 0.07;          % vertical upward heat flux at boundary [W/m^2] 
 
 
 % Diffusion and Basal Heat flux only (no radiogenic heating/Darcy
@@ -87,7 +87,7 @@ x_dh = 5000;
 x_pds = 11200;
 
 % Turn on Darcy flow after x years
-tDarcyOn = 100000 * yr; % [s]
+tDarcyOn = 20000 * yr; % [s]
 
 
 runID = 'Conduction';

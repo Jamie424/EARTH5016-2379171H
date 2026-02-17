@@ -99,7 +99,7 @@ switch MODE
         makefigverify(xc,zc,T,Ta,t/yr);
     case 'SIM'
         figure(1); clf
-        makefig(xc,zc,T,KD,rho,kT,t/yr);
+        makefig(xc,zc,T,KD,Qr,kT,t/yr);
         
 end
 
@@ -183,6 +183,10 @@ while t <= tend
             % After 20000 years turn Darcy on
             %************
             else
+                % initiate small perturbation when Darcy starts
+                if t >= tDarcyOn && t < tDarcyOn + dt
+                    T(~air) = T(~air) + 0.1*randn(nnz(~air),1);
+                end
 
                 % update pseudo-transient iterative step
                 dtau = (h/2)^2 ./ max(KD(:) + eps);
@@ -191,7 +195,6 @@ while t <= tend
                 itP     = 0;
                 res_rms = 1;
                 dp      = 0*p;
-                res0 = [];
 
             while res_rms >= tolP
 
@@ -201,7 +204,7 @@ while t <= tend
 
                 % Get Darcy flux, residuals, close boundaries
                 [u,w,resP] = darcy_flux(p, Drho, g, KD, h, ix3, iz3);
-                w(2:end,:) = (1-air).*w(2:end,:); 
+                w(2:end,:) = (~air).*w(2:end,:); 
 
                 % pressure update 
                 dp = - alpha * dtau * resP + beta*dp;
@@ -227,7 +230,7 @@ while t <= tend
                     disp([min(q_est), mean(q_est), max(q_est)])
                 end
 
-                if itP >= 1e5
+                if itP >= 1e6
                     break
                 end
 
@@ -250,16 +253,16 @@ while t <= tend
             % fix air layer temperature 
             resT(air) = 0;
             T(air) = Ttop;
-            T(1,:)   = Ttop;
+            %T(1,:)   = Ttop;
 
             T = T - resT/3;
                 end 
 
             % plot model progress
-            if ~mod(k,2*nop)
+            if ~mod(k,10*nop)
                 Tempfig(xc,zc,T,t/yr)
             end
-            if ~mod(k,nop)
+            if ~mod(k,5*nop)
                 plotdrill(xc,zc,T,x_dh,zdrill,Tdrill,t,yr)
                 isothermplot(xc,zc,T,x_pds,t,yr)
                 pause(0.1);
@@ -291,7 +294,7 @@ end
 
 %*****  Function to make output figure
 
-function makefig(x,z,T,KD,rho,kT,t)
+function makefig(x,z,T,KD,Qr,kT,t)
 subplot(2,2,1);
 imagesc(x,z,T); axis equal tight; colorbar
 ylabel('z [m]','FontSize',15)
@@ -302,10 +305,10 @@ xlabel('x [m]','FontSize',15)
 ylabel('z [m]','FontSize',15)
 title('Darcy mobility [m2/Pas]','FontSize',17)
 subplot(2,2,3)
-imagesc(x,z,rho); axis equal tight; colorbar
+imagesc(x,z, Qr); axis equal tight; colorbar
 xlabel('x [m]','FontSize',15)
 ylabel('z [m]','FontSize',15)
-title('density [kg/m3]','FontSize',17)
+title('Radiogenic heating','FontSize',17)
 subplot(2,2,4)
 imagesc(x,z,kT); axis equal tight; colorbar
 xlabel('x [m]','FontSize',15)
@@ -322,19 +325,6 @@ imagesc(x,z,T); axis equal tight; colorbar
 ylabel('z [m]','FontSize',15)
 title(['Temperature [C]; time = ',num2str(t),' [yr]'],'FontSize',17)
 end
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 %*****  Function to make output figure (verify against analytical solution)

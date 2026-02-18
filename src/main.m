@@ -176,7 +176,7 @@ while t <= tend
                 
                 % Enforce surface / air BC
                 T(air) = Ttop;
-                T(1,:) = Ttop;
+                %T(1,:) = Ttop;
 
 
             %**********
@@ -265,7 +265,7 @@ while t <= tend
             end
 
             if ~mod(k,5*nop)
-                plotdrill(xc,zc,T,x_dh,zdrill,Tdrill,t,yr)
+                plotdrill(xc,zc,T,air,x_dh,zdrill,Tdrill,t,yr)
                 isothermplot(xc,zc,T,air,x_pds,t,yr)
                 
                 pause(0.1);
@@ -566,7 +566,7 @@ end
 % Granite Drillhole approx x = 5000 plus minus 100
 % Proposed drillsite approx x = 11200
 
-function plotdrill(xc,zc,T,x_dh,zdrill,Tdrill,t,yr)
+function plotdrill(xc,zc,T,air,x_dh,zdrill,Tdrill,t,yr)
 
 % Find nearest model column to drill location
 [~, ix] = min(abs(xc - x_dh));
@@ -574,9 +574,19 @@ function plotdrill(xc,zc,T,x_dh,zdrill,Tdrill,t,yr)
 % get temperature profile 
 Tmodel = T(:,ix);
 
+% Extract full column
+Tcol = T(:,ix);
+
+% Find first non-air cell in this column
+k0 = find(air(:,ix)==0, 1, 'first');   % first rock index
+
+% Trim to rock-only and shift depth so surface = 0
+Tmodel = Tcol(k0:end);
+zrock  = zc(k0:end) - zc(k0);          % now starts at 0 at ground
+
 % Create figure
 figure(100); clf
-plot(Tmodel, zc, 'b-', 'LineWidth', 2); hold on
+plot(Tmodel, zrock, 'b-', 'LineWidth', 2); hold on
 plot(Tdrill, zdrill, 'ro', 'MarkerFaceColor','r');
 
 set(gca,'YDir','reverse')
@@ -584,7 +594,21 @@ xlabel('Temperature [°C]')
 ylabel('Depth [m]')
 title(sprintf('Drillhole Comparison at x ≈ %.0f m | t = %.1f yr', ...
               xc(ix), t/yr))
-legend('Model','Drillhole data','Location','southeast')
+legend('Model (rock only)','Drillhole data')
+
+% Interpolate model onto drill depths
+Tmod_at_drill = interp1(zrock, Tmodel, zdrill, 'linear', 'extrap');
+
+% Residuals
+res  = Tmod_at_drill - Tdrill;
+
+% Root mean squared error
+RMSE = sqrt(mean(res.^2));
+
+% Show on plot
+txt = sprintf('RMSE = %.2f °C', RMSE);
+text(0.04, 0.6, txt, 'Units','normalized', 'VerticalAlignment','bottom', ...
+     'BackgroundColor','w', 'EdgeColor', 'k');
 grid on
 drawnow
 end

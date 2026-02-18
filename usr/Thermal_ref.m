@@ -23,9 +23,9 @@ matprop = [
    2   1.37	 2078	1625   0e-6   9e-8   % Sa
    3   1.43	 2153	1398   0e-6   4e-10  % Si
    4   1.93	 2106	1802   0e-6   1e-7   % Gr
-   5	2.7	 2500	 820   6e-6 1e-11   % He1
+   5	2.7	 2500	 820   4.5e-6 1e-11   % He1
    6	2.7	 3000	1000   0e-6   1e-11   % Bg
-   7	2.7	 2600	830    7.5e-6   1e-11   % He2
+   7	2.7	 2600	830    6e-6   1e-11   % He2
    8    2.5	 2300	1000   0e-6   3.58e-7 % Fz
    9    1.7  2037	1451   0e-6   1e-9   % Ms
   10    1.9  2133	1209   0e-6   1e-10]; % Cm
@@ -58,7 +58,7 @@ TINT  = 'RK2';         % time integration scheme (Explicit:'FE1', 'RK2')
 MODE  = 'SIM';         % Verfification or simulation ('VERIFY','SIM')
 
 yr    = 3600*24*365;   % seconds per year [s]
-tend  = 1e7*yr;        % stopping time [s]
+tend  = 5e5*yr;        % stopping time [s]
 CFL   = 1/5;           % time step limiter
 nop   = 20;            % make output figure every 'nop' time steps
 tolP  = 1e-6;          % Pressure tolerance [Pa] 
@@ -87,7 +87,7 @@ x_dh = 5000;
 x_pds = 11200;
 
 % Turn on Darcy flow after x years
-tDarcyOn = 2e5 * yr; % [s]
+tDarcyOn = 3e5 * yr; % [s]
 
 levels = [50,70,100,120];
 x_min = 0;

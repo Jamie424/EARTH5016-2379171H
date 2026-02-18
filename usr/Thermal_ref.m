@@ -25,7 +25,7 @@ matprop = [
    4   1.93	 2106	1802   0e-6   1e-7   % Gr
    5	2.7	 2500	 820   4.5e-6 1e-11   % He1
    6	2.7	 3000	1000   0e-6   1e-11   % Bg
-   7	2.7	 2600	830    6e-6   1e-11   % He2
+   7	2.7	 2600	830    6.0e-6 1e-11   % He2
    8    2.5	 2300	1000   0e-6   3.58e-7 % Fz
    9    1.7  2037	1451   0e-6   1e-9   % Ms
   10    1.9  2133	1209   0e-6   1e-10]; % Cm
@@ -60,11 +60,11 @@ MODE  = 'SIM';         % Verfification or simulation ('VERIFY','SIM')
 yr    = 3600*24*365;   % seconds per year [s]
 tend  = 5e5*yr;        % stopping time [s]
 CFL   = 1/5;           % time step limiter
-nop   = 20;            % make output figure every 'nop' time steps
+nop   = 200;           % make output figure every 'nop' time steps
 tolP  = 1e-6;          % Pressure tolerance [Pa] 
 alpha = 0.80;          % 
 beta  = 0.80;
-geo   = 0.025;          % geotherm [K/m]
+geo   = 0.025;         % geotherm [K/m]
 qbot  = 0.06;          % vertical upward heat flux at boundary [W/m^2] 
 
 
@@ -83,17 +83,19 @@ Tdrill = [ 15.1; 15.9; 21.5; 21.0; 25.0; 28.3; 31.6; 35.7; 40.4; 43.2; 45.6; 50.
 x_dh = 5000;
 
 
-% proposed drill site
+% proposed drill site C location
 x_pds = 11200;
 
-% Turn on Darcy flow after x years
+% Turn on Darcy flow after n years
 tDarcyOn = 3e5 * yr; % [s]
 
-levels = [50,70,100,120];
-x_min = 0;
-x_max = 15000;
 
+runID = 'thermal_ref';
 
-runID = 'Conduction';
+% create output directory
+if ~isfolder(['../out/',runID]) % check if output directory exists
+ mkdir(['../out/',runID]); % if not then create it
+end
+
 %*****  RUN MODEL
 run('../src/main.m');

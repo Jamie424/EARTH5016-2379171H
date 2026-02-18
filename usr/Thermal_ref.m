@@ -29,7 +29,7 @@ matprop = [
    8    2.5	 2300	1000   0e-6   3.58e-7 % Fz
    9    1.7  2037	1451   0e-6   1e-9   % Ms
   10    1.9  2133	1209   0e-6   1e-10]; % Cm
-air = units==1;
+air   = units==1;
 fault = units==8;
 
 

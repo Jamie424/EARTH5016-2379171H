@@ -263,27 +263,27 @@ while t <= tend
             % plot model progress
             if ~mod(k,nop)
                 figure(3); clf
-                Tempfig(xc,zc,T,t/yr)
+                Tempfig(xc,zc,T,t/yr); fig3=figure(3);
                 figure(4); clf
-                isotherm2D(xc,zc,T,t/yr)
+                isotherm2D(xc,zc,T,t/yr); fig4=figure(4);
                 figure(5); clf
-                plotdrill(xc,zc,T,air,x_dh,zdrill,Tdrill,t,yr)
+                plotdrill(xc,zc,T,air,x_dh,zdrill,Tdrill,t,yr); fig5=figure(5);
                 figure(6); clf
-                isothermplot(xc,zc,T,air,x_pds,t,yr)
+                isothermplot(xc,zc,T,air,x_pds,t,yr); fig6=figure(6);
                 pause(0.1);
             end
 
             % set file name to runID_figtype_(frame#).mat and place in ../out/runID/
             % save figure handle 'fig1' every '4*nop' time steps
-            if ~mod(k,4*nop)
-             fig3      = ['../out/',runID,'/',runID,'_','Tempfig',     '_',num2str(floor(step/nop))];
-             fig4   = ['../out/',runID,'/',runID,'_','isotherm2D',  '_',num2str(floor(step/nop))];
-             fig5    = ['../out/',runID,'/',runID,'_','plotdrill',   '_',num2str(floor(step/nop))];
-             fig6 = ['../out/',runID,'/',runID,'_','isothermplot','_',num2str(floor(step/nop))];
-             print(fig3,Tempfig,     '-dpng','-r300','-image');
-             print(fig4,isotherm2D,  '-dpng','-r300','-image');
-             print(fig5,plotdrill,   '-dpng','-r300','-image');
-             print(fig6,isothermplot,'-dpng','-r300','-image');
+            if ~mod(k,20*nop)
+             fig_3      = ['../out/',runID,'/',runID,'_','Tempfig',     '_',num2str(floor(k/(20*nop)))];
+             fig_4   = ['../out/',runID,'/',runID,'_','isotherm2D',  '_',num2str(floor(k/(20*nop)))];
+             fig_5    = ['../out/',runID,'/',runID,'_','plotdrill',   '_',num2str(floor(k/(20*nop)))];
+             fig_6 = ['../out/',runID,'/',runID,'_','isothermplot','_',num2str(floor(k/(20*nop)))];
+             print(fig3,fig_3,'-dpng','-r300','-image');
+             print(fig4,fig_4,'-dpng','-r300','-image');
+             print(fig5,fig_5,'-dpng','-r300','-image');
+             print(fig6,fig_6,'-dpng','-r300','-image');
             end
 
     end
@@ -492,18 +492,18 @@ function [u,w,res] = darcy_flux(p, Drho, g, KD, h, ix, iz)
 % calculate Darcy flux coefficient at cell faces using harmonic averaging
 KD1 = KD(iz(1:end-1),:);
 KD2 = KD(iz(2:end),:);
-kfz = 2*KD1.*KD2 ./ (KD1 + KD2 + eps);
+KDz = 2*KD1.*KD2 ./ (KD1 + KD2 + eps);
 
 KD1 = KD(:,ix(1:end-1));
 KD2 = KD(:,ix(2:end));
-kfx = 2*KD1.*KD2 ./ (KD1 + KD2 + eps);
+KDx = 2*KD1.*KD2 ./ (KD1 + KD2 + eps);
 
 % calculate density coefficient at cell faces
 Drhoz = (Drho(iz(1:end-1),:)+Drho(iz(2:end),:))/2;
 
 % calculate diffusive flux of scalar field f
-w = - kfz .* diff(p(iz,:),1,1)/h + kfz .* Drhoz*g;
-u = - kfx .* diff(p(:,ix),1,2)/h;
+w = - KDz .* diff(p(iz,:),1,1)/h + kfz .* Drhoz*g;
+u = - KDx .* diff(p(:,ix),1,2)/h;
 
 % Closed flow boundaries
 w(1,:) = 0; w(end,:) = 0;
@@ -692,7 +692,7 @@ end
 
 % function to create 2D isotherm depths across domain (with copilot assistance)
 
-function isothermDepth2D(x, z, T, t)
+function isotherm2D(x, z, T, t)
 imagesc(x,z,T);
 axis equal tight
 set(gca,'YDir','reverse')

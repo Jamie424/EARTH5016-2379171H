@@ -29,8 +29,8 @@ matprop = [
    4   1.93	 2106	1802   0e-6   1e-7   % Gr
    5	2.7	 2500	 820   6e-6 1e-11   % He1
    6	2.7	 3000	1000   0e-6   1e-11   % Bg
-   7	2.7	 2600	830    7.5e-6   1e-11   % He2
-   8    2.5	 2300	1000   0e-6   3.58e-7 % Fz
+   7	2.7	 2600	830    7.5e-6 1e-11   % He2
+   8    2.5	 2300	1000   0e-6   2.2e-7 % Fz
    9    1.7  2037	1451   0e-6   1e-9   % Ms
   10    1.9  2133	1209   0e-6   1e-10]; % Cm
 air = units==1;
@@ -69,7 +69,7 @@ tolP  = 1e-6;          % Pressure tolerance [Pa]
 alpha = 0.80;          % 
 beta  = 0.80;
 geo   = 0.025;          % geotherm [K/m]
-qbot  = 0.06;          % vertical upward heat flux at boundary [W/m^2] 
+qbot  = 0.08;          % vertical upward heat flux at boundary [W/m^2] 
 
 
 % Diffusion and Basal Heat flux only (no radiogenic heating/Darcy

@@ -217,7 +217,7 @@ while t <= tend
                     res_rms = rms(dtau*resP(:))/ den;
     
                     % print model progress
-                    if ~mod(itP,5*nop)
+                    if ~mod(itP,nop)
                         fprintf('\n\n')
                         fprintf('*************************************************************\n');
                         fprintf('*****  GEOTHERMAL MODEL | %s  **************\n',datetime('now'));
@@ -232,11 +232,11 @@ while t <= tend
                         disp([min(q_est), mean(q_est), max(q_est)])
                     end
 
-                if itP >= 1e6
-                    break
-                end
-
-                itP = itP + 1;
+                    if itP >= 1e6
+                        break
+                    end
+    
+                    itP = itP + 1;
             end
 
                 
@@ -502,7 +502,7 @@ KDx = 2*KD1.*KD2 ./ (KD1 + KD2 + eps);
 Drhoz = (Drho(iz(1:end-1),:)+Drho(iz(2:end),:))/2;
 
 % calculate diffusive flux of scalar field f
-w = - KDz .* diff(p(iz,:),1,1)/h + kfz .* Drhoz*g;
+w = - KDz .* diff(p(iz,:),1,1)/h + KDz .* Drhoz*g;
 u = - KDx .* diff(p(:,ix),1,2)/h;
 
 % Closed flow boundaries
@@ -542,7 +542,7 @@ function Tempfig(x,z,T,t)
 
 imagesc(x,z,T); axis equal tight; colorbar
 ylabel('z [m]','FontSize',15)
-title(['Temperature [C]; time = ',num2str(t),' [yr]'],'FontSize',17)
+title(['Temp [C]; time = ',num2str(t),' [yr]'],'FontSize',17)
 end
 
 
@@ -700,13 +700,13 @@ colorbar
 hold on
 
 % --- Add isotherm contour lines ---
-levels = [50 70 100 120];   % °C
+levels = [50 70 100 120];   
 [C,hc] = contour(x,z,T,levels,'k','LineWidth',1.5);
 
 clabel(C,hc,'FontSize',10,'Color','k')
 
 xlabel('x [m]')
 ylabel('z [m]')
-title(['Temperature [C]; time = ',num2str(t),' [yr]'])
+title(['Temp [C]; time = ',num2str(t),' [yr]'])
 
 end

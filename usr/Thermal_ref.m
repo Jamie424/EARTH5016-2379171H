@@ -1,4 +1,11 @@
 %***** RUN 2D MODEL FROM IMAGE ***********************************
+% Reference Case 
+% He1 Qr = 4.5e-6
+% He2 Qr = 6.0e-6
+% Fz  KD = 2.2e-7
+
+
+
 
 % clear workspace
 clear all; close all; %clc;
@@ -26,7 +33,7 @@ matprop = [
    5	2.7	 2500	 820   4.5e-6 1e-11   % He1
    6	2.7	 3000	1000   0e-6   1e-11   % Bg
    7	2.7	 2600	830    6.0e-6 1e-11   % He2
-   8    2.5	 2300	1000   0e-6   3.58e-7 % Fz
+   8    2.5	 2300	1000   0e-6   2.2e-7 % Fz
    9    1.7  2037	1451   0e-6   1e-9   % Ms
   10    1.9  2133	1209   0e-6   1e-10]; % Cm
 air   = units==1;
@@ -59,12 +66,12 @@ MODE  = 'SIM';         % Verfification or simulation ('VERIFY','SIM')
 
 yr    = 3600*24*365;   % seconds per year [s]
 tend  = 5e5*yr;        % stopping time [s]
-CFL   = 1/5;           % time step limiter
+CFL   = 1/4;           % time step limiter
 nop   = 200;           % make output figure every 'nop' time steps
 tolP  = 1e-6;          % Pressure tolerance [Pa] 
 alpha = 0.80;          % 
 beta  = 0.80;
-geo   = 0.025;         % geotherm [K/m]
+geo   = 0.03;         % geotherm [K/m]
 qbot  = 0.06;          % vertical upward heat flux at boundary [W/m^2] 
 
 

@@ -1,4 +1,8 @@
 %***** RUN 2D MODEL FROM IMAGE ***********************************
+% Validation testing
+
+
+
 
 % clear workspace
 clear all; close all; %clc;

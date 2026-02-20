@@ -1,4 +1,4 @@
-%***** RUN 2D MODEL FROM IMAGE ***********************************
+4.%***** RUN 2D MODEL FROM IMAGE ***********************************
 % Low Radiogenic Heating case
 % He1 Qr = 2.5e-6
 % He2 Qr = 4.5e-6

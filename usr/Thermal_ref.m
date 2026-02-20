@@ -71,7 +71,7 @@ nop   = 200;           % make output figure every 'nop' time steps
 tolP  = 1e-6;          % Pressure tolerance [Pa] 
 alpha = 0.80;          % 
 beta  = 0.80;
-geo   = 0.03;         % geotherm [K/m]
+geo   = 0.03;          % geotherm [K/m]
 qbot  = 0.06;          % vertical upward heat flux at boundary [W/m^2] 
 
 

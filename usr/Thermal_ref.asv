@@ -1,5 +1,8 @@
 %***** RUN 2D MODEL FROM IMAGE ***********************************
-% Reference Case
+% Reference Case 
+% He1 Qr = 4.5e-6
+% He2 Qr = 6.0e-6
+% Fz  KD = 2.2e-7
 
 
 
@@ -64,11 +67,11 @@ MODE  = 'SIM';         % Verfification or simulation ('VERIFY','SIM')
 yr    = 3600*24*365;   % seconds per year [s]
 tend  = 5e5*yr;        % stopping time [s]
 CFL   = 1/4;           % time step limiter
-nop   = 200;           % make output figure every 'nop' time steps
+nop   = 200;            % make output figure every 'nop' time steps
 tolP  = 1e-6;          % Pressure tolerance [Pa] 
 alpha = 0.80;          % 
 beta  = 0.80;
-geo   = 0.025;         % geotherm [K/m]
+geo   = 0.03;         % geotherm [K/m]
 qbot  = 0.06;          % vertical upward heat flux at boundary [W/m^2] 
 
 

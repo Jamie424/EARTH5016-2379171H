@@ -232,11 +232,11 @@ while t <= tend
                         disp([min(q_est), mean(q_est), max(q_est)])
                     end
 
-                if itP >= 1e6
-                    break
-                end
-
-                itP = itP + 1;
+                    if itP >= 1e6
+                        break
+                    end
+    
+                    itP = itP + 1;
             end
 
                 
@@ -542,7 +542,7 @@ function Tempfig(x,z,T,t)
 
 imagesc(x,z,T); axis equal tight; colorbar
 ylabel('z [m]','FontSize',15)
-title(['Temperature [C]; time = ',num2str(t),' [yr]'],'FontSize',17)
+title(['Temp [C]; time = ',num2str(t),' [yr]'],'FontSize',17)
 end
 
 
@@ -594,9 +594,6 @@ function plotdrill(xc,zc,T,air,x_dh,zdrill,Tdrill,t,yr)
 % Find nearest model column to drill location
 [~, ix] = min(abs(xc - x_dh));
     
-% get temperature profile 
-Tmodel = T(:,ix);
-
 % Extract full column
 Tcol = T(:,ix);
 
@@ -627,7 +624,7 @@ res  = Tmod_at_drill - Tdrill;
 % Root mean squared error
 RMSE = sqrt(mean(res.^2));
 
-% Show on plot
+% Show RMSE on plot
 txt = sprintf('RMSE = %.2f °C', RMSE);
 text(0.04, 0.6, txt, 'Units','normalized', 'VerticalAlignment','bottom', ...
      'BackgroundColor','w', 'EdgeColor', 'k');
@@ -643,6 +640,7 @@ end
 % function to create isotherm depths at drillsite (with copilot assistance)
 function isothermplot(xc,zc,T,air,x_pds,t,yr)
 
+% Find nearest model column to proposed drill site
 [~, ix] = min(abs(xc - x_pds));
 
 Tcol = T(:,ix);
@@ -650,10 +648,6 @@ aircol = air(:,ix);
 
 % surface = first rock cell (first non-air)
 kSurf = find(~aircol, 1, 'first');
-if isempty(kSurf)
-    warning('Column is all air at x=%.0f m', xc(ix));
-    return
-end
 
 zRel = zc - zc(kSurf);          % depth below ground surface
 Trock = Tcol(kSurf:end);
@@ -700,13 +694,13 @@ colorbar
 hold on
 
 % --- Add isotherm contour lines ---
-levels = [50 70 100 120];   % °C
+levels = [50 70 100 120];   
 [C,hc] = contour(x,z,T,levels,'k','LineWidth',1.5);
 
 clabel(C,hc,'FontSize',10,'Color','k')
 
 xlabel('x [m]')
 ylabel('z [m]')
-title(['Temperature [C]; time = ',num2str(t),' [yr]'])
+title(['Temp [C]; time = ',num2str(t),' [yr]'])
 
 end

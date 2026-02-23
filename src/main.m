@@ -100,7 +100,9 @@ switch MODE
         makefigverify(xc,zc,T,Ta,t/yr);
     case 'SIM'
         figure(2); clf
-        initialfig(xc,zc,T,KD,Qr,kT,t/yr);
+        initialfig(xc,zc,T,KD,Qr,kT,t/yr); fig2=figure(2);
+        fig_2 = ['../out/',runID,'/',runID,'_','initialfig','_',num2str(k)];
+        print(fig2,fig_2,'-dpng','-r300','-image');
         
 end
 
@@ -270,6 +272,7 @@ while t <= tend
                 plotdrill(xc,zc,T,air,x_dh,zdrill,Tdrill,t,yr); fig5=figure(5);
                 figure(6); clf
                 isothermplot(xc,zc,T,air,x_pds,t,yr); fig6=figure(6);
+                isothermplot(xc,zc,T,air,x_altleft,t,yr)
                 pause(0.1);
             end
 
@@ -530,7 +533,6 @@ Ta   = f0 + df*(sgm0.^2/sgmt.^2)*(exp(-((Xc-(W/2    )- u0*t).^2 + (Zc-(D/2    ) 
                                 + exp(-((Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (4*sgmt^2)) ...
                                 + exp(-((Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (4*sgmt^2)));
 end
-
 
 
 

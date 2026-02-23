@@ -93,6 +93,10 @@ x_dh = 5000;
 % proposed drill site C location
 x_pds = 11200;
 
+% alternative locations
+x_altleft  = 9000;
+x_altright = 13500;
+
 % Turn on Darcy flow after n years
 tDarcyOn = 3e5 * yr; % [s]
 

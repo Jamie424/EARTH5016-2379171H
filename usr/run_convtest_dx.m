@@ -37,9 +37,9 @@ SCHEME= 'explicit';    % Explicit or implicit scheme ('explicit', 'implicit')
 MODE   = 'VERIFY';     % Verfification ('VERIFY','SIM')
 
 yr    = 3600*24*365;   % seconds per year [s]
-tend  = 0.1 * W/max(u0,k0);  % stopping time [s]
+tend  = 0.3 * W/max(u0,k0);  % stopping time [s]
 CFL   = 1/4;         % time step limiter
-nop   = 5000;          % make output figure every 'nop' time steps
+nop   = 100;          % make output figure every 'nop' time steps
 
 runID = 'convtest_dx';
 

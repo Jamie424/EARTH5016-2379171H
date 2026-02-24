@@ -209,7 +209,8 @@ while t <= tend
                     rhoW = rhoW0 .* (1 - alphaT.*(T - Tref));
                     Drho = rhoW - mean(rhoW,2);
     
-                    % Get Darcy flux, residuals, close boundaries
+                    % Get Darcy flux, residuals, 
+                    % close boundaries in function
                     [u,w,resP] = darcy_flux(p, Drho, g, KD, h, ix3, iz3);
                     w(2:end,:) = (~air).*w(2:end,:); 
     
@@ -233,8 +234,8 @@ while t <= tend
                         fprintf(1,'  ---  iter %d;  res norm = %4.4e \n',itP,res_rms);
                         fprintf("T min/max: %g %g\n", min(T(~air),[],'all'), max(T(~air),[],'all'));
                        % fprintf("P min/max: %g %g\n", min(p(~air),[],'all'), max(p(~air),[],'all'));
-                        q_est = -kT(end,:) .* (T(end,:) - T(end-1,:)) / h;
-                        disp([min(q_est), mean(q_est), max(q_est)])
+                        
+                 
                     end
 
                     if itP >= 1e6

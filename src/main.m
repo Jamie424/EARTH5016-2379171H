@@ -706,7 +706,7 @@ hold on
 levels = [50 70 100 120];   
 [C,hc] = contour(x,z,T,levels,'k','LineWidth',1.5);
 
-clabel(C,hc,'FontSize',10,'Color','k')
+clabel(C,hc,'FontSize',10,'Color','k','LabelSpacing',400)
 
 xlabel('x [m]')
 ylabel('z [m]')

@@ -152,7 +152,8 @@ while t <= tend
                
 
                 if ~mod(k,nop)
-                    makefigverify(xc,zc,T,Ta,t/yr)
+                    figure(8); clf
+                    makefigverify(xc,zc,T,Ta,t/yr); fig3=figure(8);
                     pause(0.1);
                 end
                          

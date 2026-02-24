@@ -151,8 +151,11 @@ while t <= tend
                 disp(' ');
                
 
-                if ~mod(k,nop)
-                    makefigverify(xc,zc,T,Ta,t/yr)
+                if ~mod(k,2*nop)
+                    figure(7); clf
+                    makefigverify(xc,zc,T,Ta,t/yr); fig7=figure(7);
+                    fig_7 = ['../out/',runID,'/',runID,'_','Verifyplot','_',num2str(floor(k/(2*nop)))];
+                    print(fig7,fig_7,'-dpng','-r300','-image');
                     pause(0.1);
                 end
                          
@@ -272,12 +275,15 @@ while t <= tend
                 plotdrill(xc,zc,T,air,x_dh,zdrill,Tdrill,t,yr); fig5=figure(5);
                 figure(6); clf
                 isothermplot(xc,zc,T,air,x_pds,t,yr); fig6=figure(6);
-                isothermplot(xc,zc,T,air,x_altleft,t,yr)
+                %figure(11); clf
+                %isothermplot(xc,zc,T,air,x_altleft,t,yr); fig11=figure(11);
+                %figure(12); clf
+                %isothermplot(xc,zc,T,air,x_altright,t,yr); fig12=figure(12);
                 pause(0.1);
             end
 
             % set file name to runID_figtype_(frame#).mat and place in ../out/runID/
-            % save figure handle 'fig1' every '4*nop' time steps
+            % save figure handle 'fig1' every '20*nop' time steps
             if ~mod(k,20*nop)
              fig_3      = ['../out/',runID,'/',runID,'_','Tempfig',     '_',num2str(floor(k/(20*nop)))];
              fig_4   = ['../out/',runID,'/',runID,'_','isotherm2D',  '_',num2str(floor(k/(20*nop)))];
@@ -523,15 +529,15 @@ function Ta = analytical(f0,df,sgm0,k0,u0,w0,Xc,Zc,D,W,t)
 
 sgmt = sqrt(sgm0^2 + 2*k0*t);
 % sum each of the 9 combinations
-Ta   = f0 + df*(sgm0.^2/sgmt.^2)*(exp(-((Xc-(W/2    )- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (4*sgmt^2)) ...
-                                + exp(-((Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (4*sgmt^2)) ...
-                                + exp(-((Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (4*sgmt^2)) ...
-                                + exp(-((Xc-(W/2    )- u0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (4*sgmt^2)) ...
-                                + exp(-((Xc-(W/2    )- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (4*sgmt^2)) ...
-                                + exp(-((Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (4*sgmt^2)) ...
-                                + exp(-((Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (4*sgmt^2)) ...
-                                + exp(-((Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (4*sgmt^2)) ...
-                                + exp(-((Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (4*sgmt^2)));
+Ta   = f0 + df*(sgm0.^2/sgmt.^2)*(exp(-((Xc-(W/2    )- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (2*sgmt^2)) ...
+                                + exp(-((Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (2*sgmt^2)) ...
+                                + exp(-((Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2    ) - w0*t).^2)./ (2*sgmt^2)) ...
+                                + exp(-((Xc-(W/2    )- u0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (2*sgmt^2)) ...
+                                + exp(-((Xc-(W/2    )- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (2*sgmt^2)) ...
+                                + exp(-((Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (2*sgmt^2)) ...
+                                + exp(-((Xc-(W/2 + W)- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (2*sgmt^2)) ...
+                                + exp(-((Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2 + D) - w0*t).^2)./ (2*sgmt^2)) ...
+                                + exp(-((Xc-(W/2 - W)- u0*t).^2 + (Zc-(D/2 - D) - w0*t).^2)./ (2*sgmt^2)));
 end
 
 

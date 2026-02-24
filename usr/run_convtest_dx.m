@@ -38,8 +38,15 @@ MODE   = 'VERIFY';     % Verfification ('VERIFY','SIM')
 
 yr    = 3600*24*365;   % seconds per year [s]
 tend  = 0.1 * W/max(u0,k0);  % stopping time [s]
-CFL   = 1/10;         % time step limiter
+CFL   = 1/4;         % time step limiter
 nop   = 5000;          % make output figure every 'nop' time steps
+
+runID = 'convtest_dx';
+
+% create output directory
+if ~isfolder(['../out/',runID]) % check if output directory exists
+ mkdir(['../out/',runID]); % if not then create it
+end
 
 %*****  RUN MODEL
 run('../src/main.m');
@@ -49,8 +56,10 @@ DX(nn) = h;
 
 end
 
+
+
 DXref = DX(1) ./ [1,2,4]; 
-figure(); 
+figure(10); 
 loglog(DX,E                   ,'ro','LineWidth',2.0,'MarkerSize',8); axis tight; box on; hold on  
 loglog(DXref, E(1)*(DXref/DX(1)).^1, 'k-', 'LineWidth',1.5)
 loglog(DXref, E(1)*(DXref/DX(1)).^2, 'k-', 'LineWidth',1.0)
@@ -62,3 +71,7 @@ legend('num. error','linear','quadratic','cubic','FontSize',15,'box','off','loca
 xlabel('Step size [m]','FontSize',18)
 ylabel('Numerical error','FontSize',18)
 title('Numerical Convergence in Space','FontSize',20)
+
+fig10=figure(10);
+fig_10 = ['../out/',runID,'/',runID,'_','isothermplot','_',num2str(floor(k))];
+print(fig10,fig_10,'-dpng','-r300','-image');

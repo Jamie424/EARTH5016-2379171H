@@ -4,9 +4,7 @@ A collaborative MSc Computational Geoscience project at the University of Glasgo
 
 ## Overview
 
-This 2D numerical model combines groundwater circulation with heat transport through a geological cross section containing granite, sediments and a normal fault.
-
-The project investigates how granite heat production and fault flow properties affect underground temperatures and potential geothermal drilling locations.
+This 2D numerical model combines groundwater circulation with heat transport through a geological cross section containing granite, sediments and a normal fault. The project investigates how granite heat production and fault flow properties affect underground temperatures and potential geothermal drilling locations.
 
 ## Model setup
 
@@ -14,7 +12,7 @@ The project investigates how granite heat production and fault flow properties a
 
 ![Helmsdale geological cross-section](helmsdale-cross-section.png)
 
-Geological vertical cross section showing the Helmsdale granite phases, surrounding geological units and fault zone represented in the model.
+Geological vertical cross section showing the Helmsdale granite phases, surrounding geological units and fault zone represented in the model. D denotes the location of the supplied borehole data at depth, while point C denotes the proposed drill site.
 
 ### Reference model starting conditions
 
@@ -68,6 +66,8 @@ Changing the fault Darcy mobility altered groundwater circulation and temperatur
 | ![Lower Darcy mobility](out/thermal_lowKD/thermal_lowKD_isotherm2D_16.png) | ![Higher Darcy mobility](out/thermal_uppKD/thermal_uppKD_isotherm2D_21.png) |
 
 The predicted depth to 100°C increased from 2,856 m to 2,921 m between the lower and higher mobility scenarios.
+
+Fault zone properties remain poorly constrained as borehole observations were limited and located away from the fault. Different Darcy mobility scenarios produced similar RMSE values at the borehole, suggesting these observations provide limited information about fault zone flow. Therefore, these results explore plausible scenarios rather than establish a confirmed drilling recommendation.
 
 ## Running the code
 

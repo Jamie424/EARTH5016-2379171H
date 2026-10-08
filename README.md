@@ -44,7 +44,7 @@ Modelled temperature profiles were compared with supplied borehole observations.
 | :---: | :---: |
 | ![Low heating: borehole comparison](out/thermal_lowQr/thermal_lowQr_plotdrill_16.png) | ![High heating: borehole comparison](out/thermal_uppQr/thermal_uppQr_plotdrill_16.png) |
 
-Blue curves show modelled temperatures after approximately 480,000 years, while red points show borehole observations.
+Blue curves show modelled temperature profiles, while red points show borehole observations.
 
 ### 2. Implications for the proposed drilling site
 
@@ -76,3 +76,19 @@ Requires MATLAB with Image Processing Toolbox.
 Set MATLAB’s Current Folder to usr and run Thermal_ref.m. Figures are saved to out/thermal_ref/.
 
 Other Thermal scripts explore sensitivity scenarios. Run run_convtest_dt.m and run_convtest_dx.m for convergence tests.
+
+## Limitations
+
+Geometry and boundaries: The model represents a 2D cross section, with closed fluid flow boundaries, a fixed surface temperature and uniform basal heat flux. These assumptions simplify the regional groundwater and thermal system.
+
+Material properties: Properties are assigned by geological unit, with radiogenic heating included only in granite. Low mobility in granite and some sediment units limits the representation of fracture flow and marine sediment circulation.
+
+Numerical approach: Diffusion-only spin up uses Forward Euler whereas RK2 is used in the analytical verification case. Temperature updates are relaxed after Darcy flow starts. The simulations aim to approach near equilibrium conditions, so post-Darcy elapsed times should be interpreted cautiously.
+
+## Code Origins and acknowledgements
+
+This project began with a 1D heat transport template and supporting code snippets supplied by Dr Tobias Keller during the Numerical Geodynamics course at the University of Glasgow.
+
+I completed and extended the implementation into a 2D heat transport and Darcy-flow model for the Helmsdale application, tracking development using Git and GitHub. The project includes parameter sensitivity studies, borehole temperature comparisons and additional visualisations.
+
+Thanks to Tobias Keller for his teaching, guidance and feedback.

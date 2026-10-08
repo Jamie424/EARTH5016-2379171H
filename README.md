@@ -1,6 +1,6 @@
 # Helmsdale groundwater flow and geothermal model
 
-A collaborative MSc Computational Geoscience project at the University of Glasgow, using MATLAB to investigate geothermal potential near Helmsdale in the Scottish Highlands.
+A MSc Computational Geoscience project at the University of Glasgow, using MATLAB to investigate geothermal potential near Helmsdale in the Scottish Highlands.
 
 ## Overview
 
